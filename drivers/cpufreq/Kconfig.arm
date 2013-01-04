@@ -218,6 +218,14 @@ config ARM_SPEAR_CPUFREQ
 	help
 	  This adds the CPUFreq driver support for SPEAr SOCs.
 
+config ARM_SUNXI_CPUFREQ
+	bool "Allwinner A1X CPUFreq support"
+	depends on ARCH_SUNXI
+	default y
+	select CPU_FREQ_TABLE
+	help
+	  This adds the CPUFreq driver support for sunxi SOCs.
+
 config ARM_TEGRA_CPUFREQ
 	bool "TEGRA CPUFreq support"
 	depends on ARCH_TEGRA
