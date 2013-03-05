@@ -19,6 +19,9 @@
 #include <linux/idr.h>
 #include <linux/log2.h>
 #include <linux/pm_runtime.h>
+#ifdef CONFIG_LEDS_TRIGGER_BLOCK
+#include <linux/leds.h>
+#endif
 
 #include "blk.h"
 
@@ -626,6 +629,9 @@ void add_disk(struct gendisk *disk)
 				   "bdi");
 	WARN_ON(retval);
 
+#ifdef CONFIG_LEDS_TRIGGER_BLOCK
+	ledtrig_block_add(disk);
+#endif
 	disk_add_events(disk);
 }
 EXPORT_SYMBOL(add_disk);
@@ -635,6 +641,9 @@ void del_gendisk(struct gendisk *disk)
 	struct disk_part_iter piter;
 	struct hd_struct *part;
 
+#ifdef CONFIG_LEDS_TRIGGER_BLOCK
+	ledtrig_block_del(disk);
+#endif
 	disk_del_events(disk);
 
 	/* invalidate stuff */
