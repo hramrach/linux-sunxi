@@ -108,4 +108,10 @@ config LEDS_TRIGGER_CAMERA
 	  This enables direct flash/torch on/off by the driver, kernel space.
 	  If unsure, say Y.
 
+config LEDS_TRIGGER_BLOCK
+	bool "LED Block Device Trigger"
+	depends on LEDS_TRIGGERS && BLOCK
+	help
+	  This turns LEDs on when blocks are read from or written to a block device.
+
 endif # LEDS_TRIGGERS
