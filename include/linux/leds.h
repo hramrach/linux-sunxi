@@ -225,5 +225,10 @@ static inline void ledtrig_cpu(enum cpu_led_event evt)
 	return;
 }
 #endif
+#ifdef CONFIG_LEDS_TRIGGER_BLOCK
+struct gendisk;
+void ledtrig_block_add(struct gendisk *disk);
+void ledtrig_block_del(struct gendisk *disk);
+#endif
 
 #endif		/* __LINUX_LEDS_H_INCLUDED */
