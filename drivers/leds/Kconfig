@@ -494,6 +494,12 @@ config LEDS_TRIGGER_SLEEP
 	help
 	  This turns LEDs on when the screen is off but the cpu still running.
 
+config LEDS_TRIGGER_BLOCK
+	bool "LED Block Device Trigger"
+	depends on LEDS_TRIGGERS && BLOCK
+	help
+	  This turns LEDs on when sectors are read from or written to a block device.
+
 comment "iptables trigger is under Netfilter config (LED target)"
 	depends on LEDS_TRIGGERS
 
