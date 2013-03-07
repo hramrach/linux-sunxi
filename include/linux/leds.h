@@ -153,8 +153,10 @@ extern void led_set_brightness(struct led_classdev *led_cdev,
 struct led_trigger {
 	/* Trigger Properties */
 	const char	 *name;
-	void		(*activate)(struct led_classdev *led_cdev);
+	void		(*activate)(struct led_classdev *led_cdev); /* LED added to trigger */
 	void		(*deactivate)(struct led_classdev *led_cdev);
+	void		(*active)(struct led_trigger *trigger); /* first LED added to trigger */
+	void		(*inactive)(struct led_trigger *trigger); /* last LED removed */
 
 	/* LEDs under control by this trigger (for simple triggers) */
 	rwlock_t	  leddev_list_lock;
