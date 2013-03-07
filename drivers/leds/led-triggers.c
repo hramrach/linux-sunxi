@@ -113,6 +113,8 @@ void led_trigger_set(struct led_classdev *led_cdev, struct led_trigger *trigger)
 	if (led_cdev->trigger) {
 		write_lock_irqsave(&led_cdev->trigger->leddev_list_lock, flags);
 		list_del(&led_cdev->trig_list);
+		if (list_empty(&led_cdev->trigger->led_cdevs) && led_cdev->trigger->inactive)
+			led_cdev->trigger->inactive(led_cdev->trigger);
 		write_unlock_irqrestore(&led_cdev->trigger->leddev_list_lock,
 			flags);
 		if (led_cdev->trigger->deactivate)
@@ -122,6 +124,8 @@ void led_trigger_set(struct led_classdev *led_cdev, struct led_trigger *trigger)
 	}
 	if (trigger) {
 		write_lock_irqsave(&trigger->leddev_list_lock, flags);
+		if (list_empty(&trigger->led_cdevs) && trigger->active)
+			trigger->active(trigger);
 		list_add_tail(&led_cdev->trig_list, &trigger->led_cdevs);
 		write_unlock_irqrestore(&trigger->leddev_list_lock, flags);
 		led_cdev->trigger = trigger;

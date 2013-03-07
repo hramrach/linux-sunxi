@@ -27,6 +27,8 @@ static void ledtrig_block_timerfunc(unsigned long data);
 static DEFINE_TIMER(ledtrig_block_timer, ledtrig_block_timerfunc, 0, 0);
 static DECLARE_RWSEM(trigger_list_lock);
 static LIST_HEAD(trigger_list);
+static DECLARE_RWSEM(active_list_lock);
+static LIST_HEAD(active_list);
 static unsigned long trigger_interval = 10; /* FIXME parameter */
 
 typedef enum {
@@ -44,13 +46,14 @@ struct block_trigger {
 	struct gendisk		*disk;
 	struct led_trigger	 trigger;
 	struct list_head	 trigger_list;
+	struct list_head	 active_list;
 };
 
 static void inline ledtrig_block_schedule_timer(int check)
 {
 	if (check && timer_pending(&ledtrig_block_timer))
 		return;
-	if (list_empty(&trigger_list))
+	if (list_empty(&active_list)) /* Should be locked by caller. */
 		return;
 	mod_timer(&ledtrig_block_timer, jiffies + msecs_to_jiffies(trigger_interval));
 }
@@ -67,6 +70,26 @@ static sector_t get_disk_data(struct gendisk *disk, block_trigger_type_t type)
 				part_stat_read(disk_get_part(disk,0), sectors[WRITE]);
 	}
 	return 0; /* not reached */
+}
+
+static void ledtrig_block_active(struct led_trigger * trigger)
+{
+	struct block_trigger *entry = container_of(trigger, struct block_trigger, trigger);
+
+	down_write(&active_list_lock);
+	entry->data = get_disk_data(entry->disk,entry->type);
+	list_add_tail(&entry->active_list, &active_list);
+	ledtrig_block_schedule_timer(1);
+	up_write(&active_list_lock);
+}
+
+static void ledtrig_block_inactive(struct led_trigger * trigger)
+{
+	struct block_trigger *entry = container_of(trigger, struct block_trigger, trigger);
+
+	down_write(&active_list_lock);
+	list_del(&entry->active_list);
+	up_write(&active_list_lock);
 }
 
 static void __ledtrig_block_add(struct gendisk *disk)
@@ -115,14 +138,14 @@ static void __ledtrig_block_add(struct gendisk *disk)
 		entry->name = name;
 		entry->type = type;
 		entry->disk = disk;
-		entry->data = get_disk_data(disk,type);
 		entry->trigger.name = name;
+		entry->trigger.active = &ledtrig_block_active;
+		entry->trigger.inactive = &ledtrig_block_inactive;
 		led_trigger_register(&entry->trigger);
 		list_add_tail(&entry->trigger_list, &trigger_list);
 	}
 add_end:
 	up_write(&trigger_list_lock);
-	ledtrig_block_schedule_timer(1);
 }
 
 static void ledtrig_do_block_del(struct block_trigger * entry)
@@ -147,9 +170,9 @@ static void __ledtrig_block_del(struct gendisk *disk)
 static void ledtrig_block_timerfunc(unsigned long data)
 {
 	struct block_trigger * entry;
+	down_read(&active_list_lock);
 	ledtrig_block_schedule_timer(0); /*FIXME is timer pending in timer func? */
-	down_read(&trigger_list_lock);
-	list_for_each_entry(entry, &trigger_list, trigger_list) {
+	list_for_each_entry(entry, &active_list, active_list) {
 		sector_t new_data = get_disk_data(entry->disk, entry->type);
 
 		if (entry->data != new_data) {
@@ -159,7 +182,7 @@ static void ledtrig_block_timerfunc(unsigned long data)
 			led_trigger_event(&entry->trigger, LED_OFF);
 		}
 	}
-	up_read(&trigger_list_lock);
+	up_read(&active_list_lock);
 }
 
 static int __init ledtrig_block_init(void)
