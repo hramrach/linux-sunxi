@@ -225,10 +225,12 @@ static inline void ledtrig_cpu(enum cpu_led_event evt)
 	return;
 }
 #endif
-#ifdef CONFIG_LEDS_TRIGGER_BLOCK
 struct gendisk;
-void ledtrig_block_add(struct gendisk *disk);
-void ledtrig_block_del(struct gendisk *disk);
-#endif
+extern struct device_type disk_type;
+extern struct class block_class;
+typedef void (*disk_func)(struct gendisk *);
+extern disk_func ledtrig_block_add;
+extern disk_func ledtrig_block_del;
+extern struct mutex block_class_lock;
 
 #endif		/* __LINUX_LEDS_H_INCLUDED */

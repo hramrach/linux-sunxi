@@ -18,14 +18,21 @@
 #include <linux/mutex.h>
 #include <linux/idr.h>
 #include <linux/log2.h>
-#ifdef CONFIG_LEDS_TRIGGER_BLOCK
 #include <linux/leds.h>
-#endif
 
 #include "blk.h"
 
-static DEFINE_MUTEX(block_class_lock);
+DEFINE_MUTEX(block_class_lock);
 struct kobject *block_depr;
+
+/* LED triggers */
+disk_func ledtrig_block_add;
+disk_func ledtrig_block_del;
+EXPORT_SYMBOL_GPL(ledtrig_block_add);
+EXPORT_SYMBOL_GPL(ledtrig_block_del);
+EXPORT_SYMBOL_GPL(block_class_lock);
+EXPORT_SYMBOL_GPL(block_class);
+EXPORT_SYMBOL_GPL(disk_type);
 
 /* for extended dynamic devt allocation, currently only one major is used */
 #define NR_EXT_DEVT		(1 << MINORBITS)
@@ -36,7 +43,7 @@ struct kobject *block_depr;
 static DEFINE_MUTEX(ext_devt_mutex);
 static DEFINE_IDR(ext_devt_idr);
 
-static struct device_type disk_type;
+struct device_type disk_type;
 
 static void disk_alloc_events(struct gendisk *disk);
 static void disk_add_events(struct gendisk *disk);
@@ -627,9 +634,8 @@ void add_disk(struct gendisk *disk)
 				   "bdi");
 	WARN_ON(retval);
 
-#ifdef CONFIG_LEDS_TRIGGER_BLOCK
-	ledtrig_block_add(disk);
-#endif
+	if(ledtrig_block_add)
+		ledtrig_block_add(disk);
 	disk_add_events(disk);
 }
 EXPORT_SYMBOL(add_disk);
@@ -639,9 +645,8 @@ void del_gendisk(struct gendisk *disk)
 	struct disk_part_iter piter;
 	struct hd_struct *part;
 
-#ifdef CONFIG_LEDS_TRIGGER_BLOCK
-	ledtrig_block_del(disk);
-#endif
+	if (ledtrig_block_del)
+		ledtrig_block_del(disk);
 	disk_del_events(disk);
 
 	/* invalidate stuff */
@@ -1148,7 +1153,7 @@ static char *block_devnode(struct device *dev, umode_t *mode)
 	return NULL;
 }
 
-static struct device_type disk_type = {
+struct device_type disk_type = {
 	.name		= "disk",
 	.groups		= disk_attr_groups,
 	.release	= disk_release,
