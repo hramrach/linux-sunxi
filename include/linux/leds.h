@@ -213,13 +213,6 @@ static inline void led_trigger_event(struct led_trigger *trigger,
 				enum led_brightness event) {}
 #endif /* CONFIG_LEDS_TRIGGERS */
 
-/* Trigger specific functions */
-#ifdef CONFIG_LEDS_TRIGGER_IDE_DISK
-extern void ledtrig_ide_activity(void);
-#else
-static inline void ledtrig_ide_activity(void) {}
-#endif
-
 /*
  * Generic LED platform data for describing LED names and default triggers.
  */
