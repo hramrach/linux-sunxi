@@ -273,6 +273,8 @@ static struct usb_device_id rtl8192c_usb_ids[] = {
 	{RTL_USB_DEVICE(USB_VENDER_ID_REALTEK, 0x8176, rtl92cu_hal_cfg)},
 	/* 8188cu 1*1 dongle, (b/g mode only) */
 	{RTL_USB_DEVICE(USB_VENDER_ID_REALTEK, 0x8177, rtl92cu_hal_cfg)},
+	/* Unknonw on-board/dongle chip*/
+	{RTL_USB_DEVICE(USB_VENDER_ID_REALTEK, 0x8179, rtl92cu_hal_cfg)},
 	/* 8188cu Slim Solo */
 	{RTL_USB_DEVICE(USB_VENDER_ID_REALTEK, 0x817a, rtl92cu_hal_cfg)},
 	/* 8188cu Slim Combo */
