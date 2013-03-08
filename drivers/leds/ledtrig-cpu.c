@@ -26,7 +26,9 @@
 #include <linux/percpu.h>
 #include <linux/syscore_ops.h>
 #include <linux/rwsem.h>
+
 #include "leds.h"
+#include "ledtrig-cpu.h"
 
 #define MAX_NAME_LEN	8
 

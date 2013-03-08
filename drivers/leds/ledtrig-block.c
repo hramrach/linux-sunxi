@@ -22,6 +22,8 @@
 #include <linux/list.h>
 #include <linux/slab.h>
 
+#include "ledtrig-block.h"
+
 static void ledtrig_block_timerfunc(unsigned long data);
 
 static DEFINE_TIMER(ledtrig_block_timer, ledtrig_block_timerfunc, 0, 0);
