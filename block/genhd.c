@@ -18,11 +18,9 @@
 #include <linux/mutex.h>
 #include <linux/idr.h>
 #include <linux/log2.h>
-#ifdef CONFIG_LEDS_TRIGGER_BLOCK
-#include <linux/leds.h>
-#endif
 
 #include "blk.h"
+#include "../drivers/leds/ledtrig-block.h"
 
 static DEFINE_MUTEX(block_class_lock);
 struct kobject *block_depr;
