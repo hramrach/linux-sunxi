@@ -94,7 +94,7 @@ static void ledtrig_block_inactive(struct led_trigger * trigger)
 	up_write(&active_list_lock);
 }
 
-void ledtrig_block_add(struct gendisk *disk)
+static void __ledtrig_block_add(struct gendisk *disk)
 {
 	struct block_trigger * entry;
 	block_trigger_type_t type;
@@ -150,8 +150,6 @@ add_end:
 	up_write(&trigger_list_lock);
 }
 
-EXPORT_SYMBOL(ledtrig_block_add);
-
 static void ledtrig_do_block_del(struct block_trigger * entry)
 {
 	led_trigger_unregister(&entry->trigger);
@@ -160,7 +158,7 @@ static void ledtrig_do_block_del(struct block_trigger * entry)
 	kfree(entry);
 }
 
-void ledtrig_block_del(struct gendisk *disk)
+static void __ledtrig_block_del(struct gendisk *disk)
 {
 	struct block_trigger * entry, *tmp;
 	down_write(&trigger_list_lock);
@@ -170,8 +168,6 @@ void ledtrig_block_del(struct gendisk *disk)
 	}
 	up_write(&trigger_list_lock);
 }
-
-EXPORT_SYMBOL(ledtrig_block_del);
 
 static void ledtrig_block_timerfunc(unsigned long data)
 {
@@ -193,19 +189,38 @@ static void ledtrig_block_timerfunc(unsigned long data)
 
 static int __init ledtrig_block_init(void)
 {
-	init_rwsem(&trigger_list_lock);
-	INIT_LIST_HEAD(&trigger_list);
+	struct class_dev_iter iter;
+	struct device *dev;
+	mutex_lock(&block_class_lock);
+	ledtrig_block_add = __ledtrig_block_add;
+	ledtrig_block_del = __ledtrig_block_del;
+	class_dev_iter_init(&iter, &block_class, NULL, &disk_type);
+	printk("Block device LED trigget init.\nAdding existing devices:");
+	while ((dev = class_dev_iter_next(&iter))) {
+		struct gendisk *disk = dev_to_disk(dev);
+		printk(" %s", dev_name(dev));
+		ledtrig_block_add(disk);
+	}
+	printk(".\n");
+	class_dev_iter_exit(&iter);
+	mutex_unlock(&block_class_lock);
+
 	return 0;
 }
 
 static void __exit ledtrig_block_exit(void)
 {
-	struct block_trigger * entry, *tmp;
+	mutex_lock(&block_class_lock);
+	ledtrig_block_add = NULL;
+	ledtrig_block_del = NULL;
+	mutex_unlock(&block_class_lock);
+
 	down_write(&trigger_list_lock);
-	list_for_each_entry_safe(entry, tmp, &trigger_list, trigger_list) {
-		ledtrig_do_block_del(entry);
-	}
+	while (!list_empty(&trigger_list))
+		ledtrig_do_block_del(
+				list_first_entry(&trigger_list, struct block_trigger, trigger_list));
 	up_write(&trigger_list_lock);
+	del_timer_sync(&ledtrig_block_timer);
 }
 
 module_init(ledtrig_block_init);
