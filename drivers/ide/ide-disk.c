@@ -26,7 +26,6 @@
 #include <linux/slab.h>
 #include <linux/delay.h>
 #include <linux/mutex.h>
-#include <linux/leds.h>
 #include <linux/ide.h>
 
 #include <asm/byteorder.h>
@@ -185,8 +184,6 @@ static ide_startstop_t ide_do_rw_disk(ide_drive_t *drive, struct request *rq,
 
 	BUG_ON(drive->dev_flags & IDE_DFLAG_BLOCKED);
 	BUG_ON(rq->cmd_type != REQ_TYPE_FS);
-
-	ledtrig_ide_activity();
 
 	pr_debug("%s: %sing: block=%llu, sectors=%u, buffer=0x%08lx\n",
 		 drive->name, rq_data_dir(rq) == READ ? "read" : "writ",
