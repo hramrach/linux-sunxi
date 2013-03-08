@@ -31,7 +31,6 @@
 #include <linux/random.h>
 #include <linux/hw_breakpoint.h>
 #include <linux/cpuidle.h>
-#include <linux/leds.h>
 #include <linux/reboot.h>
 
 #include <asm/cacheflush.h>
@@ -41,6 +40,7 @@
 #include <asm/stacktrace.h>
 #include <asm/mach/time.h>
 #include <asm/tls.h>
+#include "../../../drivers/leds/trigger/ledtrig-cpu.h"
 
 #ifdef CONFIG_CC_STACKPROTECTOR
 #include <linux/stackprotector.h>
