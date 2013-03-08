@@ -626,10 +626,10 @@ void add_disk(struct gendisk *disk)
 				   "bdi");
 	WARN_ON(retval);
 
-	disk_add_events(disk);
 #ifdef CONFIG_LEDS_TRIGGER_BLOCK
 	ledtrig_block_add(disk);
 #endif
+	disk_add_events(disk);
 }
 EXPORT_SYMBOL(add_disk);
 
