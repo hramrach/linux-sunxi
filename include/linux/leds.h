@@ -162,13 +162,6 @@ extern void led_trigger_blink(struct led_trigger *trigger,
 
 #endif
 
-/* Trigger specific functions */
-#ifdef CONFIG_LEDS_TRIGGER_IDE_DISK
-extern void ledtrig_ide_activity(void);
-#else
-#define ledtrig_ide_activity() do {} while(0)
-#endif
-
 /*
  * Generic LED platform data for describing LED names and default triggers.
  */
