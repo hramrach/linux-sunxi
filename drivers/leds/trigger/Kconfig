@@ -109,7 +109,7 @@ config LEDS_TRIGGER_CAMERA
 	  If unsure, say Y.
 
 config LEDS_TRIGGER_BLOCK
-	bool "LED Block Device Trigger"
+	tristate "LED Block Device Trigger"
 	depends on LEDS_TRIGGERS && BLOCK
 	help
 	  This turns LEDs on when blocks are read from or written to a block device.
