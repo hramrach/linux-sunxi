@@ -55,24 +55,34 @@ static int aw_pm_valid(suspend_state_t state)
 
 static int aw_pm_enter(suspend_state_t state)
 {
-	int (*standby)(struct aw_pm_info *arg) = (int (*)(struct aw_pm_info *arg))SRAM_FUNC_START;
-	int ret;
+	switch (state) {
+		case PM_SUSPEND_STANDBY:
+			cpu_do_idle();
+			return 0;
+		case PM_SUSPEND_MEM: {
+			int (*standby)(struct aw_pm_info *arg) = (int (*)(struct aw_pm_info *arg))SRAM_FUNC_START;
+			int ret;
 
-	/* move standby code to sram */
-	memcpy((void *)SRAM_FUNC_START, (void *)&standby_bin_start, (int)&standby_bin_end - (int)&standby_bin_start);
+			/* move standby code to sram */
+			memcpy((void *)SRAM_FUNC_START, (void *)&standby_bin_start, (int)&standby_bin_end - (int)&standby_bin_start);
 
-	/* config system wakeup evetn type */
-	standby_info.standby_para.event = SUSPEND_WAKEUP_SRC_EXINT | SUSPEND_WAKEUP_SRC_ALARM |
-		SUSPEND_WAKEUP_SRC_KEY | SUSPEND_WAKEUP_SRC_IR | SUSPEND_WAKEUP_SRC_USB;
+			/* config system wakeup evetn type */
+			standby_info.standby_para.event = SUSPEND_WAKEUP_SRC_EXINT | SUSPEND_WAKEUP_SRC_ALARM |
+				SUSPEND_WAKEUP_SRC_KEY | SUSPEND_WAKEUP_SRC_IR | SUSPEND_WAKEUP_SRC_USB;
 
-	/* goto sram and run */
-	ret = standby(&standby_info);
-	if (!ret)
-		pr_info("%s: wakeup by event:%d\n", __func__, standby_info.standby_para.event);
-	else
-		pr_err("%s: suspend failed with error:%d\n", __func__, ret);
+			/* goto sram and run */
+			ret = standby(&standby_info);
+			if (!ret)
+				pr_info("%s: wakeup by event:%d\n", __func__, standby_info.standby_para.event);
+			else
+				pr_err("%s: suspend failed with error:%d\n", __func__, ret);
 
-	return ret;
+			return ret;
+		}
+		default:
+			pr_err("%s: invalid pm state:%d\n", __func__, state);
+			return -EINVAL;
+	}
 }
 
 static struct platform_suspend_ops aw_pm_ops = {
