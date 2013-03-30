@@ -1,6 +1,7 @@
 subdir		:= standby
 
-obj-y		+= pm.o standby.o
+obj-y		+= pm.o standby.o \
+	     standby-kernel.o standby/standby_delay.o
 
 $(obj)/standby.o: $(obj)/standby/standby.bin
 

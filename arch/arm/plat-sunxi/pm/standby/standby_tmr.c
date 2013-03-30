@@ -39,8 +39,6 @@ static __u32 TmrIntCtl, Tmr0Ctl, Tmr0IntVal, Tmr0CntVal, Tmr1Ctl, Tmr1IntVal, Tm
 */
 __s32 standby_tmr_init(void)
 {
-    __s32       i;
-
     /* set timer register base */
     TmrReg = (__standby_tmr_reg_t *)SW_VA_TIMERC_IO_BASE;
 
@@ -80,8 +78,6 @@ __s32 standby_tmr_init(void)
 */
 __s32 standby_tmr_exit(void)
 {
-    __s32   i;
-
     /* restore timer0 parameters */
     TmrReg->Tmr0IntVal  = Tmr0IntVal;
     TmrReg->Tmr0CntVal  = Tmr0CntVal;
@@ -188,8 +184,6 @@ void standby_tmr_disable_watchdog(void)
 */
 __s32 standby_tmr_query(enum tmr_event_type_e type)
 {
-    __s32   result;
-
     switch(type)
     {
         case TMR_EVENT_POWEROFF:
@@ -227,8 +221,6 @@ __s32 standby_tmr_query(enum tmr_event_type_e type)
 */
 void standby_tmr_mdlay(int ms)
 {
-    int     i;
-
     if(ms < 30){
         ms = 30;
     }

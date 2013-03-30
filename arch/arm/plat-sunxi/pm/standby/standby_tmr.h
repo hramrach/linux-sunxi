@@ -101,6 +101,7 @@ enum tmr_event_type_e{
 __s32 standby_tmr_init(void);
 __s32 standby_tmr_exit(void);
 __s32 standby_tmr_query(enum tmr_event_type_e type);
+__s32 standby_tmr_set(__u32 second);
 void standby_tmr_mdlay(int ms);
 void standby_tmr_enable_watchdog(void);
 void standby_tmr_disable_watchdog(void);

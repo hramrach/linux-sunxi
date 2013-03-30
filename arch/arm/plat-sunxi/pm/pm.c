@@ -36,6 +36,7 @@
 #include <asm/delay.h>
 #include <asm/io.h>
 #include <linux/power/aw_pm.h>
+#include "standby/standby_wakeup.h"
 
 
 extern char *standby_bin_start;
@@ -55,9 +56,15 @@ static int aw_pm_valid(suspend_state_t state)
 
 static int aw_pm_enter(suspend_state_t state)
 {
+	/* config system wakeup evetn type */
+	standby_info.standby_para.event = SUSPEND_WAKEUP_SRC_EXINT | SUSPEND_WAKEUP_SRC_ALARM |
+		SUSPEND_WAKEUP_SRC_KEY | SUSPEND_WAKEUP_SRC_IR | SUSPEND_WAKEUP_SRC_USB;
+
 	switch (state) {
 		case PM_SUSPEND_STANDBY:
+			standby_wakeup_init();
 			cpu_do_idle();
+			standby_wakeup_fini();
 			return 0;
 		case PM_SUSPEND_MEM: {
 			int (*standby)(struct aw_pm_info *arg) = (int (*)(struct aw_pm_info *arg))SRAM_FUNC_START;
@@ -65,10 +72,6 @@ static int aw_pm_enter(suspend_state_t state)
 
 			/* move standby code to sram */
 			memcpy((void *)SRAM_FUNC_START, (void *)&standby_bin_start, (int)&standby_bin_end - (int)&standby_bin_start);
-
-			/* config system wakeup evetn type */
-			standby_info.standby_para.event = SUSPEND_WAKEUP_SRC_EXINT | SUSPEND_WAKEUP_SRC_ALARM |
-				SUSPEND_WAKEUP_SRC_KEY | SUSPEND_WAKEUP_SRC_IR | SUSPEND_WAKEUP_SRC_USB;
 
 			/* goto sram and run */
 			ret = standby(&standby_info);

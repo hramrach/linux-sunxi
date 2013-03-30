@@ -4,7 +4,7 @@ targets := standby.elf
 standby-y := common.o standby.o stack.o standby_clock.o \
 	     dram.o dram_init.o \
 	     standby_int.o standby_ir.o standby_key.o standby_power.o \
-	     standby_tmr.o standby_twi.o standby_usb.o standby_delay.o
+	     standby_tmr.o standby_twi.o standby_usb.o standby_delay.o standby_wakeup.o
 
 targets	+= $(standby-y)
 STANDBY_OBJS = $(addprefix $(obj)/,$(standby-y))

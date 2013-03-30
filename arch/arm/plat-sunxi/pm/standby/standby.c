@@ -22,6 +22,7 @@
  */
 
 #include "standby_i.h"
+#include "standby_wakeup.h"
 
 extern unsigned int save_sp(void);
 extern void restore_sp(unsigned int sp);
@@ -37,9 +38,6 @@ static void standby(void);
 static __u32 dcdc2, dcdc3;
 static struct sun4i_clk_div_t  clk_div;
 static struct sun4i_clk_div_t  tmp_clk_div;
-
-/* parameter for standby, it will be transfered from sys_pwm module */
-struct aw_pm_info  pm_info;
 
 #define DRAM_BASE_ADDR      0xc0000000
 #define DRAM_TRANING_SIZE   (16)
@@ -86,40 +84,7 @@ int __attribute__((section(".startup")))main(struct aw_pm_info *arg)
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
     /* init module before dram enter selfrefresh */
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-
-    /* initialise standby modules */
-    standby_clk_init();
-    standby_int_init();
-    standby_tmr_init();
-    standby_power_init();
-    /* init some system wake source */
-    if(pm_info.standby_para.event & SUSPEND_WAKEUP_SRC_EXINT){
-        standby_enable_int(INT_SOURCE_EXTNMI);
-    }
-    if(pm_info.standby_para.event & SUSPEND_WAKEUP_SRC_KEY){
-        standby_key_init();
-        standby_enable_int(INT_SOURCE_LRADC);
-    }
-    if(pm_info.standby_para.event & SUSPEND_WAKEUP_SRC_IR){
-        standby_ir_init();
-        standby_enable_int(INT_SOURCE_IR0);
-        standby_enable_int(INT_SOURCE_IR1);
-    }
-    if(pm_info.standby_para.event & SUSPEND_WAKEUP_SRC_ALARM){
-        //standby_alarm_init();???
-        standby_enable_int(INT_SOURCE_ALARM);
-    }
-    if(pm_info.standby_para.event & SUSPEND_WAKEUP_SRC_USB){
-        standby_usb_init();
-        standby_enable_int(INT_SOURCE_USB0);
-    }
-    if(pm_info.standby_para.event & SUSPEND_WAKEUP_SRC_TIMEOFF){
-        /* set timer for power off */
-        if(pm_info.standby_para.time_off) {
-            standby_tmr_set(pm_info.standby_para.time_off);
-            standby_enable_int(INT_SOURCE_TIMER0);
-        }
-    }
+    standby_wakeup_init();
 
     /* save stack pointer registger, switch stack to sram */
     sp_backup = save_sp();
@@ -138,22 +103,7 @@ int __attribute__((section(".startup")))main(struct aw_pm_info *arg)
     restore_sp(sp_backup);
 
     /* exit standby module */
-    if(pm_info.standby_para.event & SUSPEND_WAKEUP_SRC_USB){
-        standby_usb_exit();
-    }
-    if(pm_info.standby_para.event & SUSPEND_WAKEUP_SRC_IR){
-        standby_ir_exit();
-    }
-    if(pm_info.standby_para.event & SUSPEND_WAKEUP_SRC_ALARM){
-        //standby_alarm_exit();
-    }
-    if(pm_info.standby_para.event & SUSPEND_WAKEUP_SRC_KEY){
-        standby_key_exit();
-    }
-    standby_power_exit();
-    standby_tmr_exit();
-    standby_int_exit();
-    standby_clk_exit();
+    standby_wakeup_fini();
 
     /* restore dram traning area */
     standby_memcpy((char *)DRAM_BASE_ADDR, (char *)dram_traning_area_back, sizeof(__u32)*DRAM_TRANING_SIZE);

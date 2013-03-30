@@ -26,7 +26,7 @@
 #include "standby_i.h"
 
 static __standby_key_reg_t  *KeyReg;
-static __u32 KeyCtrl, KeyIntc, KeyInts, KeyData0, KeyData1;
+static __u32 KeyCtrl, KeyIntc;
 
 /*
 *********************************************************************************************************

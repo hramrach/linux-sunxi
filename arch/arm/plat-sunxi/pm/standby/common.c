@@ -23,6 +23,9 @@
 
 #include "standby_i.h"
 
+/* parameter for standby, it will be transfered from sys_pwm module */
+struct aw_pm_info  pm_info;
+
 
 /*
 *********************************************************************************************************

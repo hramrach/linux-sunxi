@@ -36,8 +36,7 @@
 */
 __s32 standby_power_init(void)
 {
-    __u8 val, mask, reg_val;
-    __s32   i;
+    __u8 reg_val;
 
 	standby_twi_init(AXP_IICBUS);
 
@@ -219,7 +218,6 @@ __u32 standby_get_voltage(enum power_vol_type_e type)
 {
 	struct axp_info *info = 0;
 	__u8 val, mask;
-	int ret;
 
 	info = find_info(type);
 	if (info == 0) {
