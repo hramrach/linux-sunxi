@@ -541,21 +541,20 @@ config SUN3I_NANDFLASH_TEST
 
 config SUN4I_NANDFLASH
         depends on BLOCK && ARCH_SUN4I
-        tristate "SUN4I Nandflash Driver"
+        tristate
         select SUNXI_NAND
-        ---help---
-          Nand flash driver for SUN4I
 
 config SUN5I_NANDFLASH
 	depends on BLOCK && ARCH_SUN5I
-	tristate "Nandflash Driver for A12/A13"
+	tristate
 	select SUNXI_NAND
-	---help---
-	  Nand flash driver for A12/A13
 
 config SUNXI_NAND
-	tristate
+	depends on BLOCK && PLAT_SUNXI && (ARCH_SUN5I || ARCH_SUN4I)
+	tristate "Nandflash Driver for A10/A12/A13"
 	select SUNXI_NAND_PARTITION
+        ---help---
+          Nand flash driver for sunXi
 
 config SUNXI_NAND_COMPAT_DEV
 	depends on SUNXI_NAND
