@@ -9,9 +9,14 @@ config SW_DEBUG_UART
 	  output.
 
 config SUNXI_MALI_RESERVED_MEM
-	bool
+	bool "Reserve 64 MiB of physically contiguous memory for Mali GPU"
 	depends on MALI
-	default y
+	default n
+	help
+	  If enabled, use 64 MiB of dedicated memory and 192 MiB of os memory
+	  (instead of 256 MiB of os memory alone) for Mali. Reservation of
+	  dedicated memory may or may not improve Mali performance in some
+	  cases, but makes this memory unavailable for the rest of the system.
 
 config MACH_SUN4I
 	bool
