@@ -50,6 +50,7 @@ static _mali_osk_resource_t arch_configuration [] =
 		.description = "Mali-400 MMU for PP",
 		.mmu_id = 2
 	},
+#ifdef CONFIG_SUNXI_MALI_RESERVED_MEM
 	{
 		.type = MEMORY,
 		.description = "Mali Sdram",
@@ -65,6 +66,15 @@ static _mali_osk_resource_t arch_configuration [] =
 		.size = 192 * 1024 * 1024, /* 64 MB */
 		.flags = _MALI_CPU_WRITEABLE | _MALI_CPU_READABLE | _MALI_MMU_READABLE | _MALI_MMU_WRITEABLE
 	},
+#else
+	{
+		.type = OS_MEMORY,
+		.description = "OS Memory",
+		.alloc_order = 0, /* Highest preference for this memory */
+		.size = 256 * 1024 * 1024, /* 256 MB */
+		.flags = _MALI_CPU_WRITEABLE | _MALI_CPU_READABLE | _MALI_MMU_READABLE | _MALI_MMU_WRITEABLE
+	},
+#endif
 	{
 		.type = MALI400L2,
 		.base = 0x01C41000,
