@@ -16,6 +16,7 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/device.h>
+#include <linux/platform_device.h>
 #include <linux/genhd.h>
 #include <linux/timer.h>
 #include <linux/leds.h>
@@ -31,7 +32,16 @@ static DECLARE_RWSEM(trigger_list_lock);
 static LIST_HEAD(trigger_list);
 static DECLARE_RWSEM(active_list_lock);
 static LIST_HEAD(active_list);
-static unsigned long trigger_interval = 10; /* FIXME parameter */
+static unsigned long trigger_interval = 10;
+
+module_param(trigger_interval, ulong, 0);
+MODULE_PARM_DESC(trigger_interval, "Interval in ms after which block device statistics are checked");
+
+static ssize_t show_trigger_interval(struct device *dev, struct device_attribute *attr,
+		char *buf);
+static ssize_t store_trigger_interval(struct device *dev, struct device_attribute *attr,
+		const char *buf, size_t count);
+static DEVICE_ATTR(trigger_interval, S_IWUSR | S_IRUGO, show_trigger_interval, store_trigger_interval);
 
 typedef enum {
 	BLOCKTRIG_TYPE_MIN = 1,
@@ -51,12 +61,36 @@ struct block_trigger {
 	struct list_head	 active_list;
 };
 
+static ssize_t show_trigger_interval(struct device *dev, struct device_attribute *attr,
+		char *buf)
+{
+	ssize_t ret;
+	down_read(&active_list_lock);
+	ret = scnprintf(buf, PAGE_SIZE, "%lu\n", trigger_interval);
+	up_read(&active_list_lock);
+	return ret;
+}
+
+static ssize_t store_trigger_interval(struct device *dev, struct device_attribute *attr,
+		const char *buf, size_t count)
+{
+	ssize_t ret;
+	unsigned long tmp;
+	ret = sscanf(buf, "%lu", &tmp);
+	if (!tmp) return -EINVAL;
+	down_write(&active_list_lock);
+	trigger_interval = tmp;
+	up_write(&active_list_lock);
+	return ret;
+}
+
 static void inline ledtrig_block_schedule_timer(int check)
 {
 	if (check && timer_pending(&ledtrig_block_timer))
 		return;
 	if (list_empty(&active_list)) /* Should be locked by caller. */
 		return;
+	if(!trigger_interval) trigger_interval = 1;
 	mod_timer(&ledtrig_block_timer, jiffies + msecs_to_jiffies(trigger_interval));
 }
 
@@ -102,7 +136,6 @@ static void __ledtrig_block_add(struct gendisk *disk)
 	static const char _write[] = "-write";
 	static const char _io[] = "";
 	const char * suffix;
-	char * name;
 	struct device *ddev = disk_to_dev(disk);
 	const char * devname = dev_name(ddev);
 	
@@ -110,13 +143,13 @@ static void __ledtrig_block_add(struct gendisk *disk)
 	for (type = BLOCKTRIG_TYPE_MIN; type <= BLOCKTRIG_TYPE_MAX; type++) {
 
 		entry = kzalloc(sizeof(struct block_trigger), GFP_KERNEL);
-		if(!entry) {
+		if (!entry) {
 			pr_warn("LED triggers for device %s failed to register (no memory)\n",
 					devname);
 			goto add_end;
 		}
 
-		switch(type) {
+		switch (type) {
 			case BLOCKTRIG_READ:
 				suffix = _read;
 				break;
@@ -128,19 +161,15 @@ static void __ledtrig_block_add(struct gendisk *disk)
 				break;
 		}
 
-		name = kzalloc(strlen(devname) + strlen(suffix) + 1, GFP_KERNEL);
-		if(!name) {
+		entry->name = kasprintf(GFP_KERNEL, "%s%s", devname, suffix);
+		if (!entry->name) {
 			kfree(entry);
 			pr_warn("LED triggers for device %s failed to register (no memory)\n",
 					devname);
 			goto add_end;
 		}
-
-		sprintf(name, "%s%s", devname, suffix);
-		entry->name = name;
 		entry->type = type;
 		entry->disk = disk;
-		entry->trigger.name = name;
 		entry->trigger.active = &ledtrig_block_active;
 		entry->trigger.inactive = &ledtrig_block_inactive;
 		led_trigger_register(&entry->trigger);
@@ -187,10 +216,11 @@ static void ledtrig_block_timerfunc(unsigned long data)
 	up_read(&active_list_lock);
 }
 
-static int __init ledtrig_block_init(void)
+static int ledtrig_block_probe(struct platform_device *pdev)
 {
 	struct class_dev_iter iter;
 	struct device *dev;
+	device_create_file(&pdev->dev, &dev_attr_trigger_interval);
 	mutex_lock(&block_class_lock);
 	ledtrig_block_add = __ledtrig_block_add;
 	ledtrig_block_del = __ledtrig_block_del;
@@ -208,7 +238,7 @@ static int __init ledtrig_block_init(void)
 	return 0;
 }
 
-static void __exit ledtrig_block_exit(void)
+static int __devexit ledtrig_block_remove(struct platform_device *pdev)
 {
 	mutex_lock(&block_class_lock);
 	ledtrig_block_add = NULL;
@@ -221,11 +251,27 @@ static void __exit ledtrig_block_exit(void)
 				list_first_entry(&trigger_list, struct block_trigger, trigger_list));
 	up_write(&trigger_list_lock);
 	del_timer_sync(&ledtrig_block_timer);
+	device_remove_file(&pdev->dev, &dev_attr_trigger_interval);
+	return 0;
 }
 
-module_init(ledtrig_block_init);
-module_exit(ledtrig_block_exit);
+static const struct of_device_id of_ledtrig_block_match[] = {
+	{ .compatible = "ledtrig-block", },
+	{},
+};
+
+static struct platform_driver ledtrig_block_driver = {
+	.probe = ledtrig_block_probe,
+	.remove = ledtrig_block_remove,
+	.driver = {
+		.name = "ledtrig-block",
+		.owner = THIS_MODULE,
+		.of_match_table = of_ledtrig_block_match,
+	},
+};
+
+module_platform_driver(ledtrig_block_driver);
 
 MODULE_AUTHOR("Michal Suchanek <hramrach@gmail.com>");
-MODULE_DESCRIPTION("LED Block Device Activity Trigger");
+MODULE_DESCRIPTION("LED Block Device Activity Trigger\nset led based on block device statistics.");
 MODULE_LICENSE("GPL");
