@@ -59,3 +59,4 @@ obj-$(CONFIG_LEDS_TRIGGER_CPU)		+= ledtrig-cpu.o
 obj-$(CONFIG_LEDS_TRIGGER_DEFAULT_ON)	+= ledtrig-default-on.o
 obj-$(CONFIG_LEDS_TRIGGER_SLEEP)	+= ledtrig-sleep.o
 obj-$(CONFIG_LEDS_TRIGGER_BLOCK)	+= ledtrig-block.o
+obj-$(CONFIG_LEDS_TRIGGER_AGGREGATOR)	+= ledtrig-grek.o

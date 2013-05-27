@@ -73,6 +73,15 @@ struct led_classdev {
 	struct led_trigger	*trigger;
 	struct list_head	 trig_list;
 	void			*trigger_data;
+
+	/* This is a hook function that can be used to disable setting a
+	 * trigger.  Led trigger aggregator needs this to prevent setting up
+	 * aggregator cycles.  This is called with trigger_lock and
+	 * trigger_list_lock held. These are semaphores so recursive calling
+	 * should work. If unsure leave NULL. Otherwise leave NULL as well ;-)
+	 */
+	int		(*set_trigger_hook)(struct led_classdev *led_cdev,
+				     struct led_trigger *trigger);
 #endif
 };
 

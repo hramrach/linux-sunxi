@@ -492,6 +492,12 @@ config LEDS_TRIGGER_BLOCK
 	help
 	  This turns LEDs on when sectors are read from or written to a block device.
 
+config LEDS_TRIGGER_AGGREGATOR
+	tristate "LED Trigger Aggregator"
+	depends on LEDS_TRIGGERS
+	help
+	  This is a simple LED trigger aggregator. Handy when you have more triggers than LEDs.
+
 comment "iptables trigger is under Netfilter config (LED target)"
 	depends on LEDS_TRIGGERS
 
