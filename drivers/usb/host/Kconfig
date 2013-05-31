@@ -696,7 +696,7 @@ config USB_SW_SUN3I_HCD2
 #
 #-----------------------------------------------------
 config USB_SW_SUN4I_HCD0
-	tristate "SoftWinner SUN4I USB Host Controller0 (OTG)"
+	boolean "SoftWinner SUN4I USB Host Controller0 (OTG)"
 	depends on USB && USB_SW_SUN4I_USB_MANAGER
 	help
 	    SoftWinner SUN4I USB2.0 Host Controller0, OTG port.
@@ -707,7 +707,7 @@ config USB_SW_SUN4I_HCD0
 #
 #-----------------------------------------------------
 config USB_SW_SUN5I_HCD0
-	tristate "SoftWinner SUN5I USB Host Controller0 (OTG)"
+	boolean "SoftWinner SUN5I USB Host Controller0 (OTG)"
 	depends on USB && USB_SW_SUN5I_USB_MANAGER
 	help
 	    SoftWinner SUN5I USB2.0 Host Controller0, OTG port.
