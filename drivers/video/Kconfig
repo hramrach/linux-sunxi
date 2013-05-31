@@ -314,6 +314,10 @@ config FB_SUNXI_LCD
 config FB_SUNXI_HDMI
         tristate "HDMI Driver Support(sunxi)"
         depends on FB_SUNXI_LCD
+        select SOUND
+        select SND
+        select SND_SOC
+        select SND_SUN4I_SOC_HDMIAUDIO
         ---help---
         default m
 
