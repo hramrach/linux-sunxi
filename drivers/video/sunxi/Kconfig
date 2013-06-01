@@ -60,5 +60,9 @@ config LYCHEE_HDMI_SUN5I
 config FB_SUNXI_HDMI
 	tristate "HDMI Driver Support(sun[45]i)"
 	depends on FB_SUNXI_LCD
+        select SND_SUN4I_SOC_HDMIAUDIO
+        select SND
+        select SND_SOC
+        select SOUND
         default m
 endmenu
