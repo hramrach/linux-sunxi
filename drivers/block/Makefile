@@ -43,6 +43,7 @@ obj-$(CONFIG_BLK_DEV_RBD)     += rbd.o
 obj-$(CONFIG_BLK_DEV_PCIESSD_MTIP32XX)	+= mtip32xx/
 obj-$(CONFIG_SUN3I_NANDFLASH) += sun3i_nand/
 obj-$(CONFIG_SUNXI_NAND) += sunxi_nand/
+obj-$(CONFIG_SUN7I_NAND) += sun7i_nand/
 
 
 swim_mod-y	:= swim.o swim_asm.o
