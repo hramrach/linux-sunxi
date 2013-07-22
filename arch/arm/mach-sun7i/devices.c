@@ -34,6 +34,7 @@
 #include <asm/mach/time.h>
 #include <asm/setup.h>
 #include <mach/includes.h>
+#include <mach/irqs.h>
 
 /* dma */
 static u64 sw_dmac_dmamask = DMA_BIT_MASK(32);
@@ -45,8 +46,8 @@ static struct resource sw_dmac_resources[] = {
 		.flags 	= IORESOURCE_MEM,
 	},
 	[1] = {
-		.start 	= AW_IRQ_DMA,
-		.end 	= AW_IRQ_DMA,
+		.start 	= SW_INT_IRQNO_DMA,
+		.end 	= SW_INT_IRQNO_DMA,
 		.flags 	= IORESOURCE_IRQ
 	}
 };
