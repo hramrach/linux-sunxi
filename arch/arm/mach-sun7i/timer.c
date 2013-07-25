@@ -21,6 +21,7 @@
 #include <linux/clk.h>
 #include <linux/err.h>
 #include <linux/delay.h>
+#include <linux/export.h>
 #include <asm/sched_clock.h>
 #include <mach/includes.h>
 
