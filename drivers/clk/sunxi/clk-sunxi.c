@@ -400,6 +400,7 @@ static const struct factors_data sun4i_pll5_data __initconst = {
 };
 
 static const struct factors_data sun4i_apb1_data __initconst = {
+	.mux = 24,
 	.table = &sun4i_apb1_config,
 	.getter = sun4i_get_apb1_factors,
 };
@@ -509,10 +510,6 @@ static const struct mux_data sun4i_cpu_mux_data __initconst = {
 
 static const struct mux_data sun6i_a31_ahb1_mux_data __initconst = {
 	.shift = 12,
-};
-
-static const struct mux_data sun4i_apb1_mux_data __initconst = {
-	.shift = 24,
 };
 
 static void __init sunxi_mux_clk_setup(struct device_node *node,
@@ -869,7 +866,6 @@ static const struct of_device_id clk_divs_match[] __initconst = {
 /* Matches for mux clocks */
 static const struct of_device_id clk_mux_match[] __initconst = {
 	{.compatible = "allwinner,sun4i-cpu-clk", .data = &sun4i_cpu_mux_data,},
-	{.compatible = "allwinner,sun4i-apb1-mux-clk", .data = &sun4i_apb1_mux_data,},
 	{.compatible = "allwinner,sun6i-a31-ahb1-mux-clk", .data = &sun6i_a31_ahb1_mux_data,},
 	{}
 };
