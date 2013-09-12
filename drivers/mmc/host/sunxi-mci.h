@@ -219,6 +219,7 @@ struct sunxi_mmc_host {
 
 	/* IO mapping base */
 	void __iomem *reg_base;
+	void __iomem *clk_mod_reg_base;
 	spinlock_t lock;
 	struct tasklet_struct tasklet;
 
