@@ -31,7 +31,7 @@ enum ahci_type {
 	AHCI,		/* standard platform ahci */
 	IMX53_AHCI,	/* ahci on i.mx53 */
 	STRICT_AHCI,	/* delayed DMA engine start */
-	SUNXI_AHCI,	/* achi on sunxi */
+	SUNXI_AHCI,	/* ahci on sunxi */
 };
 
 static struct platform_device_id ahci_devtype[] = {
