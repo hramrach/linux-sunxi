@@ -138,6 +138,7 @@ enum {
 	PORT_SCR_NTF		= 0x3c, /* SATA phy register: SNotification */
 	PORT_FBS		= 0x40, /* FIS-based Switching */
 	PORT_DEVSLP		= 0x44, /* device sleep */
+	PORT_DMA		= 0x70, /* direct memory access */
 
 	/* PORT_IRQ_{STAT,MASK} bits */
 	PORT_IRQ_COLD_PRES	= (1 << 31), /* cold presence detect */
@@ -208,6 +209,11 @@ enum {
 	PORT_DEVSLP_DETO_OFFSET	= 2,              /* DevSlp exit timeout */
 	PORT_DEVSLP_DSP		= (1 << 1),       /* DevSlp present */
 	PORT_DEVSLP_ADSE	= (1 << 0),       /* Aggressive DevSlp enable */
+
+	/* PORT_DMA bits */
+	PORT_DMA_SETUP_OFFSET	= 8, /* dma setup offset */
+	PORT_DMA_SETUP_MASK	= (0xff << PORT_DMA_SETUP_OFFSET),/* dma mask */
+	PORT_DMA_SETUP_INIT	= (0x44 << 0),
 
 	/* hpriv->flags bits */
 
