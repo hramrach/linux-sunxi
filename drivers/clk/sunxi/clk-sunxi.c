@@ -954,6 +954,7 @@ static void __init sunxi_clock_protect(void)
 	/* memory bus clock - sun5i+ */
 	clk = clk_get(NULL, "mbus");
 	if (!IS_ERR(clk)) {
+		clk_set_rate(clk, 600000000);
 		clk_prepare_enable(clk);
 		clk_put(clk);
 	}
