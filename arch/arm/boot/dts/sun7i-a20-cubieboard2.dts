@@ -57,6 +57,7 @@
 		i2c1: i2c@01c2b000 {
 			pinctrl-names = "default";
 			pinctrl-0 = <&i2c1_pins_a>;
+			status = "okay";
 		};
 
 		ehci0: ehci0@0x01c14000 {
