@@ -619,7 +619,7 @@ static const struct gates_data sun4i_ahb_gates_data __initconst = {
 };
 
 static const struct gates_data sun47i_usb_gates_data __initconst = {
-	.mask = {0x1C0},
+	.mask = {0x1C7},
 };
 
 static const struct gates_data sun5i_usb_gates_data __initconst = {
