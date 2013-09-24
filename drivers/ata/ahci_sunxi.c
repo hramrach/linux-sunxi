@@ -30,6 +30,7 @@
 #include <linux/device.h>
 #include <linux/gfp.h>
 #include <linux/clk.h>
+#include <linux/clk-provider.h>
 #include <linux/errno.h>
 #include <linux/ahci_platform.h>
 #include "ahci.h"
@@ -161,7 +162,7 @@ static int sunxi_sata_init(struct device *dev, void __iomem *reg_base)
 	ret = clk_prepare_enable(ahci_data->ahb_clk);
 	if (ret < 0)
 		return ret;
-	
+#if 0
 	ahci_data->regulator = devm_regulator_get(dev, "pwr");
 	if (IS_ERR(ahci_data->regulator)) {
 		if (PTR_ERR(ahci_data->regulator) == -EPROBE_DEFER)
@@ -172,6 +173,7 @@ static int sunxi_sata_init(struct device *dev, void __iomem *reg_base)
 		if (ret)
 			return ret;
 	}
+#endif
 
 	return sunxi_ahci_phy_init(reg_base);
 }
@@ -182,7 +184,9 @@ static void sunxi_sata_exit(struct device *dev)
 
 	ahci_data = dev_get_drvdata(dev->parent);
 
+#if 0
 	regulator_disable(ahci_data->regulator);
+#endif
 
 	clk_disable_unprepare(ahci_data->ahb_clk);
 	clk_disable_unprepare(ahci_data->sata_clk);
@@ -223,7 +227,6 @@ static int sunxi_ahci_probe(struct platform_device *pdev)
 	ahci_data = devm_kzalloc(&pdev->dev, sizeof(*ahci_data), GFP_KERNEL);
 	if (!ahci_data)
 		return -ENOMEM;
-
 	ahci_pdev = platform_device_alloc("ahci", -1);
 	if (!ahci_pdev)
 		return -ENODEV;
@@ -247,7 +250,7 @@ static int sunxi_ahci_probe(struct platform_device *pdev)
 
 	ahci_pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
 	ahci_pdev->dev.dma_mask = &ahci_pdev->dev.coherent_dma_mask;
-	ahci_pdev->dev.of_node = &pdev->dev.of_node;
+	ahci_pdev->dev.of_node = pdev->dev.of_node;
 
 	of_dev_id = of_match_device(sunxi_ahci_of_match, &pdev->dev);
 	if (of_dev_id) {
