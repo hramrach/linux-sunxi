@@ -18,24 +18,6 @@
 	model = "Cubietech Cubieboard2";
 	compatible = "cubietech,cubieboard2", "allwinner,sun7i-a20";
 
-	chosen {
-		#address-cells = <1>;
-		#size-cells = <1>;
-
-//		bootargs = "console=ttyS0,115200 earlyprintk";
-
-		module@0 {
-			compatible = "xen,linux-zimage", "xen,multiboot-module";
-			//bootargs = "console=hvc0 earlyprintk ";
-			bootargs = "console=hvc0";		   
-			reg = <0x50000000 0x800000>;
-		};
-	};
-
-	aliases {
-		serial0 = &uart0;
-	};
-
 	soc@01c00000 {
 		sata@01c18000 {
 			status = "okay";
