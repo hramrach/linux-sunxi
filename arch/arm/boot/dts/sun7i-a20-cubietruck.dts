@@ -31,6 +31,7 @@
 				allwinner,driver = <0>;
 				allwinner,pull = <0>;
 			};
+
 			led_pins_cubietruck: led_pins@0 {
 				allwinner,pins = "PH7", "PH11", "PH20", "PH21";
 				allwinner,function = "gpio_out";
@@ -98,5 +99,4 @@
 			enable-active-high;
 		};
 	};
-};
 };
