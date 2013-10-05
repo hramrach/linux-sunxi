@@ -100,6 +100,7 @@
 
 	regulators {
 		compatible = "simple-bus";
+		pinctrl-names = "default";
 
 		reg_ahci_5v: ahci-5v {
 			compatible = "regulator-fixed";
