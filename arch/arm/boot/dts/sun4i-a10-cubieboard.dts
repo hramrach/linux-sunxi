@@ -125,6 +125,7 @@
 
 	regulators {
 		compatible = "simple-bus";
+		pinctrl-names = "default";
 
 		reg_usb1_vbus: usb1-vbus {
 			compatible = "regulator-fixed";
