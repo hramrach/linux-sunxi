@@ -21,7 +21,7 @@
 	soc@01c00000 {
 		sata: ahci@01c18000 {
 			pwr-supply = <&reg_ahci_5v>;
-			satus = "okay";
+			status = "okay";
 		};
 
 		pinctrl@01c20800 {
@@ -110,6 +110,7 @@
 
 	regulators {
 		compatible = "simple-bus";
+		pinctrl-names = "default";
 
 		reg_usb1_vbus: usb1-vbus {
 			compatible = "regulator-fixed";
