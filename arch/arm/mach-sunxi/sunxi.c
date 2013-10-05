@@ -240,9 +240,16 @@ static const char * const sun6i_board_dt_compat[] = {
 	NULL,
 };
 
+extern void __init sun6i_reset_init(void);
+static void __init sun6i_timer_init(void)
+{
+	sunxi_timer_init();
+	sun6i_reset_init();
+}
+
 DT_MACHINE_START(SUN6I_DT, "Allwinner sun6i (A31) Family")
 	.init_machine	= sunxi_dt_init,
-	.init_time	= sunxi_timer_init,
+	.init_time	= sun6i_timer_init,
 	.dt_compat	= sun6i_board_dt_compat,
 	.restart	= sun6i_restart,
 MACHINE_END
