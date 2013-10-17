@@ -118,7 +118,105 @@ static int sun6i_smp_boot_secondary(unsigned int cpu,
 	return 0;
 }
 
+/*
+ *  linux/arch/arm/mach-sun7i/platsmp.c
+ *
+ *  Copyright (C) 2013 Fan Rong <cinifr@gmail.com>
+ *  All Rights Reserved
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+/*
+ * CPU Configure module support
+ * 1: Software reset for smp cpus
+ * 2: Configure for smp cpus including boot.
+ * 3: Three 64-bit idle counters and two 64-bit common counters
+ * it is needed for smp cpus
+ */
+
+#define SUN7I_CPU1_PWR_CLAMP	0x01b0
+#define SUN7I_CPU1_PWROFF_REG	0x01b4
+
+
+static void __init sun7i_init_cpuconfig_map(unsigned int max_cpus)
+{
+	static struct of_device_id sun7i_cc_ids[] = {
+		{ .compatible = "allwinner,sun7i-a20-cpuconfig"},
+		{ /*sentinel*/ }
+	};
+	struct device_node *np;
+	np = of_find_matching_node(NULL, sun7i_cc_ids);
+	if (WARN(!np, "unable to setup cup configure"))
+		return;
+	cpucfg_membase = of_iomap(np, 0);
+	if (WARN(!cpucfg_membase, "failed to map cup configure base address"))
+		return;
+}
+
+static int sun7i_boot_secondary(unsigned int cpu, struct task_struct *idle)
+{
+	long paddr;
+	uint32_t pwr_reg;
+	uint32_t j = 0xff << 1;
+	if (!cpucfg_membase) {
+		pr_debug("error map cpu configure\n");
+		return -ENOSYS;
+	}
+
+	spin_lock(&cpu_lock);
+
+	/* Set boot addr */
+	paddr = virt_to_phys(sun6i_secondary_startup);
+	writel(paddr, cpucfg_membase + CPUCFG_PRIVATE0_REG);
+
+	/* Assert cpu core reset */
+	writel(0, cpucfg_membase + CPUCFG_CPU_RST_CTRL_REG(cpu));
+
+	/* Ensure CPU reset also invalidates L1 caches */
+	pwr_reg = readl(cpucfg_membase + CPUCFG_GEN_CTRL_REG);
+	pwr_reg &= ~BIT(cpu);
+	writel(pwr_reg, cpucfg_membase + CPUCFG_GEN_CTRL_REG);
+
+	/* DBGPWRDUP hold low */
+	pwr_reg = readl(cpucfg_membase + CPUCFG_DBG_CTL1_REG);
+	pwr_reg &= ~BIT(cpu);
+	writel(pwr_reg, cpucfg_membase + CPUCFG_DBG_CTL1_REG);
+
+	/* Ramp up power to CPU1 */
+	do {
+		writel(j, cpucfg_membase + SUN7I_CPU1_PWR_CLAMP);
+		j = j >> 1;
+	} while (j != 0);
+
+	mdelay(10);
+
+	pwr_reg = readl(cpucfg_membase + SUN7I_CPU1_PWROFF_REG);
+	pwr_reg &= ~1;
+	writel(pwr_reg, cpucfg_membase + SUN7I_CPU1_PWROFF_REG);
+	mdelay(1);
+
+	/* Release CPU reset */
+	writel(3, cpucfg_membase + CPUCFG_CPU_RST_CTRL_REG(cpu));
+
+	/* Unlock CPU */
+	pwr_reg = readl(cpucfg_membase + CPUCFG_DBG_CTL1_REG);
+	pwr_reg |= BIT(cpu);
+	writel(pwr_reg, cpucfg_membase + CPUCFG_DBG_CTL1_REG);
+
+	spin_unlock(&cpu_lock);
+
+	return 0;
+}
+
 struct smp_operations sun6i_smp_ops __initdata = {
 	.smp_prepare_cpus	= sun6i_smp_prepare_cpus,
 	.smp_boot_secondary	= sun6i_smp_boot_secondary,
+};
+
+struct smp_operations sun7i_smp_ops __initdata = {
+	.smp_boot_secondary = sun7i_boot_secondary,
+	.smp_prepare_cpus = sun7i_init_cpuconfig_map,
 };

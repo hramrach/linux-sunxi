@@ -15,5 +15,6 @@
 
 void sun6i_secondary_startup(void);
 extern struct smp_operations sun6i_smp_ops;
+extern struct smp_operations sun7i_smp_ops;
 
 #endif /* __ARCH_SUNXI_COMMON_H_ */

@@ -158,6 +158,7 @@ static const char * const sun7i_board_dt_compat[] = {
 };
 
 DT_MACHINE_START(SUN7I_DT, "Allwinner sun7i (A20) Family")
+	.smp		= smp_ops(sun7i_smp_ops),
 	.init_machine	= sunxi_dt_init,
 	.dt_compat	= sun7i_board_dt_compat,
 	.restart	= sun4i_restart,
