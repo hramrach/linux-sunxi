@@ -23,6 +23,8 @@
 #include <asm/mach/map.h>
 #include <asm/system_misc.h>
 
+extern struct smp_operations sun7i_smp_ops;
+
 #define SUN4I_WATCHDOG_CTRL_REG		0x00
 #define SUN4I_WATCHDOG_CTRL_RESTART		BIT(0)
 #define SUN4I_WATCHDOG_MODE_REG		0x04
@@ -144,6 +146,7 @@ static const char * const sun7i_board_dt_compat[] = {
 };
 
 DT_MACHINE_START(SUN7I_DT, "Allwinner sun7i (A20) Family")
+	.smp	= smp_ops(sun7i_smp_ops),
 	.init_machine	= sunxi_dt_init,
 	.dt_compat	= sun7i_board_dt_compat,
 	.restart	= sun4i_restart,
