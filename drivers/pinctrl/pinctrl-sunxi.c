@@ -423,6 +423,7 @@ sunxi_pmx_gpio_set_direction(struct pinctrl_dev *pctldev,
 	if (!desc)
 		return -EINVAL;
 
+	printk(KERN_CRIT "%s: setting %d to func %s\n", __func__, offset, desc->name);
 	sunxi_pmx_set(pctldev, offset, desc->muxval);
 
 	return 0;
@@ -484,6 +485,9 @@ static void sunxi_pinctrl_gpio_set(struct gpio_chip *chip,
 	unsigned long flags;
 	u32 regval;
 
+	printk(KERN_CRIT "%s pin %d to %d\n",
+	       __func__, offset, value);
+
 	spin_lock_irqsave(&pctl->lock, flags);
 
 	regval = readl(pctl->membase + reg);
@@ -512,6 +516,8 @@ static int sunxi_pinctrl_gpio_of_xlate(struct gpio_chip *gc,
 
 	if (flags)
 		*flags = gpiospec->args[2];
+
+	printk(KERN_CRIT "%s: %d:%d => %d\n", __func__, gpiospec->args[0], gpiospec->args[1], pin);
 
 	return pin;
 }

@@ -164,6 +164,7 @@ static int sunxi_sata_init(struct device *dev, void __iomem *reg_base)
 		return ret;
 
 	ahci_data->regulator = devm_regulator_get(dev, "pwr");
+	printk("REGULATOR is %p\n", ahci_data->regulator);
 	if (IS_ERR(ahci_data->regulator)) {
 		if (PTR_ERR(ahci_data->regulator) == -EPROBE_DEFER)
 			return -EPROBE_DEFER;
