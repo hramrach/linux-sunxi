@@ -102,12 +102,13 @@
 		blue {
 			label = "cubieboard:blue:usr";
 			gpios = <&pio 7 21 0>; /* LED1 */
+			linux,default-trigger = "heartbeat";
 		};
 
 		green {
 			label = "cubieboard:green:usr";
 			gpios = <&pio 7 20 0>; /* LED2 */
-			linux,default-trigger = "heartbeat";
+			linux,default-trigger = "default-on";
 		};
 	};
 

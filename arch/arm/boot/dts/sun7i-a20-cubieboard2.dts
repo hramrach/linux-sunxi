@@ -86,11 +86,13 @@
 
 		blue {
 			label = "cubieboard2:blue:usr";
+			linux,default-trigger = "heartbeat";
 			gpios = <&pio 7 21 0>;
 		};
 
 		green {
 			label = "cubieboard2:green:usr";
+			linux,default-trigger = "default-on";
 			gpios = <&pio 7 20 0>;
 		};
 	};
