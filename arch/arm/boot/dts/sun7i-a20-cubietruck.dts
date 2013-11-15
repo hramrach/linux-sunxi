@@ -33,6 +33,14 @@
 			pinctrl-0 = <&uart0_pins_a>;
 			status = "okay";
 		};
+
+		gmac: ethernet@01c50000 {
+			pinctrl-names = "default";
+			pinctrl-0 = <&gmac_pins_a>;
+			snps,phy-addr = <1>;
+			phy-mode = "rgmii";
+			status = "okay";
+		};
 	};
 
 	leds {
