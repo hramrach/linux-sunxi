@@ -1,0 +1,22 @@
+* Allwinner GMAC ethernet controller
+
+This device is a platform glue layer for stmmac.
+Please see stmmac.txt for the other unchanged properties.
+
+Required properties:
+ - compatible:  Should be "allwinner,sun7i-gmac"
+ - reg: Address and length of register set for the device and corresponding
+   clock control
+
+Examples:
+
+	gmac: ethernet@01c50000 {
+		compatible = "allwinner,sun7i-gmac";
+		reg = <0x01c50000 0x10000>,
+		      <0x01c20164 0x4>;
+		interrupts = <0 85 1>;
+		interrupt-names = "macirq";
+		clocks = <&ahb_gates 49>;
+		clock-names = "stmmaceth";
+		phy-mode = "mii";
+	};

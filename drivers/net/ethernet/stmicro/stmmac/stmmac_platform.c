@@ -35,6 +35,9 @@ static const struct of_device_id stmmac_dt_ids[] = {
 	{ .compatible = "snps,dwmac-3.70a"},
 	{ .compatible = "snps,dwmac-3.710"},
 	{ .compatible = "snps,dwmac"},
+#ifdef CONFIG_DWMAC_SUNXI
+	{ .compatible = "allwinner,sun7i-gmac", .data = &sun7i_gmac_data},
+#endif
 	{ /* sentinel */ }
 };
 MODULE_DEVICE_TABLE(of, stmmac_dt_ids);
