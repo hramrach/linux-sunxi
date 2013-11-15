@@ -19,6 +19,9 @@
 #include <linux/io.h>
 #include <linux/reboot.h>
 
+#include <linux/stmmac.h>
+#include <linux/phy.h>
+
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
 #include <asm/system_misc.h>
@@ -107,11 +110,63 @@ static void sunxi_setup_restart(void)
 	WARN(!wdt_base, "failed to map watchdog base address");
 }
 
+static int sun7i_gmac_init(struct platform_device *pdev)
+{
+	struct resource *res;
+	struct device *dev = &pdev->dev;
+	void __iomem *addr = NULL;
+	struct plat_stmmacenet_data *plat_dat = NULL;
+	u32 priv_clk_reg;
+
+	pr_info("Sunxi extensions to stmmac\n");
+
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+	if (!res)
+		return -EINVAL;
+	addr = devm_ioremap_resource(dev, res);
+	if (IS_ERR(addr))
+		return PTR_ERR(addr);
+
+	plat_dat = dev_get_platdata(&pdev->dev);
+	if (!plat_dat)
+		return -EINVAL;
+
+	priv_clk_reg = readl(addr);
+
+	/* Set GMAC interface port mode */
+	if (plat_dat->interface == PHY_INTERFACE_MODE_RGMII)
+		priv_clk_reg |= 0x00000004;
+	else
+		priv_clk_reg &= (~0x00000004);
+
+	/* Set gmac transmit clock source. */
+	priv_clk_reg &= (~0x00000003);
+	if (plat_dat->interface == PHY_INTERFACE_MODE_RGMII
+			|| plat_dat->interface == PHY_INTERFACE_MODE_GMII)
+		priv_clk_reg |= 0x00000002;
+
+	writel(priv_clk_reg, addr);
+
+	plat_dat->custom_data = addr;
+
+	return 0;
+}
+
+static struct plat_stmmacenet_data sun7i_gmac_data = {
+	.has_gmac = 1,
+	.init = sun7i_gmac_init,
+};
+
+struct of_dev_auxdata sunxi_auxdata_lookup[] __initdata = {
+	OF_DEV_AUXDATA("allwinner,sun7i-gmac", 0x01c50000, "gmac", &sun7i_gmac_data),
+	{}
+};
+
 static void __init sunxi_dt_init(void)
 {
 	sunxi_setup_restart();
 
-	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+	of_platform_populate(NULL, of_default_bus_match_table, sunxi_auxdata_lookup, NULL);
 }
 
 static const char * const sunxi_board_dt_compat[] = {
