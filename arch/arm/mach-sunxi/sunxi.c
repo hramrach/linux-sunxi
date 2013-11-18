@@ -149,6 +149,9 @@ static int sun7i_gmac_init(struct platform_device *pdev)
 
 	plat_dat->custom_data = addr;
 
+	/* mask out phy addr 0x0 */
+	plat_dat->mdio_bus_data->phy_mask = 0x1;
+
 	return 0;
 }
 
