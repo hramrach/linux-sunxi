@@ -543,6 +543,9 @@
 			interrupt-names = "macirq";
 			clocks = <&ahb_gates 49>;
 			clock-names = "stmmaceth";
+			snps,pbl = <2>;
+			snps,fixed-burst;
+			snps,force_sf_dma_mode;
 			status = "disabled";
 		};
 
