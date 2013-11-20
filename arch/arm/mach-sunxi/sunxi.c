@@ -18,6 +18,7 @@
 #include <linux/of_platform.h>
 #include <linux/io.h>
 #include <linux/reboot.h>
+#include <linux/clk.h>
 
 #include <linux/stmmac.h>
 #include <linux/phy.h>
@@ -110,26 +111,53 @@ static void sunxi_setup_restart(void)
 	WARN(!wdt_base, "failed to map watchdog base address");
 }
 
+struct sunxi_gmac_priv_data {
+	struct clk	*ahb_gmac_clk;
+	void __iomem	*gmac_clk_reg;
+};
+
 static int sun7i_gmac_init(struct platform_device *pdev)
 {
 	struct resource *res;
 	struct device *dev = &pdev->dev;
 	void __iomem *addr = NULL;
 	struct plat_stmmacenet_data *plat_dat = NULL;
+	struct sunxi_gmac_priv_data *priv_dat = NULL;
 	u32 priv_clk_reg;
 
 	pr_info("Sunxi extensions to stmmac\n");
 
-	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-	if (!res)
-		return -EINVAL;
-	addr = devm_ioremap_resource(dev, res);
-	if (IS_ERR(addr))
-		return PTR_ERR(addr);
-
 	plat_dat = dev_get_platdata(&pdev->dev);
 	if (!plat_dat)
 		return -EINVAL;
+
+	priv_dat = devm_kzalloc(&pdev->dev,
+				sizeof(struct sunxi_gmac_priv_data),
+				GFP_KERNEL);
+	if (!priv_dat)
+		return -ENOMEM;
+
+	/* Get AHB clock gate for GMAC
+	 * init callback is called during PM restore,
+	 * so check before we get clock */
+	if (!priv_dat->ahb_gmac_clk) {
+		priv_dat->ahb_gmac_clk = devm_clk_get(&pdev->dev, "ahb_gmac");
+		if (IS_ERR(priv_dat->ahb_gmac_clk)) {
+			dev_err(&pdev->dev, "GMAC AHB clock gate not specified\n");
+			return -ENODEV;
+		}
+	}
+
+	clk_prepare_enable(priv_dat->ahb_gmac_clk);
+
+	/* Get GMAC clock register in CCU */
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+	if (!res)
+		return -EINVAL;
+
+	addr = devm_ioremap_resource(dev, res);
+	if (IS_ERR(addr))
+		return PTR_ERR(addr);
 
 	priv_clk_reg = readl(addr);
 
@@ -147,7 +175,8 @@ static int sun7i_gmac_init(struct platform_device *pdev)
 
 	writel(priv_clk_reg, addr);
 
-	plat_dat->custom_data = addr;
+	priv_dat->gmac_clk_reg = addr;
+	plat_dat->custom_data = priv_dat;
 
 	/* mask out phy addr 0x0 */
 	plat_dat->mdio_bus_data->phy_mask = 0x1;
@@ -155,9 +184,22 @@ static int sun7i_gmac_init(struct platform_device *pdev)
 	return 0;
 }
 
+static void sun7i_gmac_exit(struct platform_device *pdev)
+{
+	struct plat_stmmacenet_data *plat_dat = dev_get_platdata(&pdev->dev);
+	struct sunxi_gmac_priv_data *priv_dat;
+
+	if (!plat_dat || !plat_dat->custom_data)
+		return;
+
+	priv_dat = plat_dat->custom_data;
+	clk_disable_unprepare(priv_dat->ahb_gmac_clk);
+}
+
 static struct plat_stmmacenet_data sun7i_gmac_data = {
 	.has_gmac = 1,
 	.init = sun7i_gmac_init,
+	.exit = sun7i_gmac_exit,
 };
 
 struct of_dev_auxdata sunxi_auxdata_lookup[] __initdata = {
