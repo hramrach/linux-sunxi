@@ -159,6 +159,14 @@
 				"apb1_uart2", "apb1_uart3", "apb1_uart4",
 				"apb1_uart5", "apb1_uart6", "apb1_uart7";
 		};
+
+		mac_phy: mac_phy {
+			#clock-cells = <0>;
+			compatible = "fixed-clock";
+			clock-frequency = <25000000>;
+			clock-output-names = "mac_phy";
+		};
+
 	};
 
 	soc@01c00000 {
