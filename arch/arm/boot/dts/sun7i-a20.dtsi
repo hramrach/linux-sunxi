@@ -548,8 +548,8 @@
 			      <0x01c20164 0x4>;
 			interrupts = <0 85 1>;
 			interrupt-names = "macirq";
-			clocks = <&ahb_gates 49>;
-			clock-names = "stmmaceth";
+			clocks = <&ahb_gates 49>, <&mac_phy>;
+			clock-names = "ahb_gmac", "stmmaceth";
 			snps,pbl = <2>;
 			snps,fixed-burst;
 			status = "disabled";
