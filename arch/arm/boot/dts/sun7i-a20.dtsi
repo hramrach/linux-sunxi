@@ -279,6 +279,13 @@
 			reg = <0x01c2015c 0x4>;
 			clocks = <&osc24M>, <&pll6 2>, <&pll5 1>;
 		};
+
+		mac_phy: mac_phy {
+			#clock-cells = <0>;
+			compatible = "fixed-clock";
+			clock-frequency = <25000000>;
+			clock-output-names = "mac_phy";
+		};
 	};
 
 	soc@01c00000 {
