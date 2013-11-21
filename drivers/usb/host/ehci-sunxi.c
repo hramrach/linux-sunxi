@@ -439,7 +439,7 @@ static void __exit sunxi_ehci_exit_module(void)
 }
 module_exit(sunxi_ehci_exit_module);
 
-MODULE_DESCRIPTION(DRIVER_DESC);
+MODULE_DESCRIPTION(DRV_DESC);
 MODULE_LICENSE("GPL");
 MODULE_ALIAS("platform:" DRV_NAME);
 MODULE_DEVICE_TABLE(of, ehci_of_match);
