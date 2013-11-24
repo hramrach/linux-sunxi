@@ -17,6 +17,7 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/leds.h>
+#include "ledtrig-camera.h"
 
 DEFINE_LED_TRIGGER(ledtrig_flash);
 DEFINE_LED_TRIGGER(ledtrig_torch);
