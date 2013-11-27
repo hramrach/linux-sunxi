@@ -28,21 +28,15 @@
 			ahci_pwr_pin: ahci_pwr_pin@0 {
 				allwinner,pins = "PB8";
 				allwinner,function = "gpio_out";
-				allwinner,driver = <0>;
+				allwinner,drive = <0>;
 				allwinner,pull = <0>;
 			};
+
 			led_pins_cubieboard2: led_pins@0 {
 				allwinner,pins = "PH20", "PH21";
 				allwinner,function = "gpio_out";
 				allwinner,drive = <0>;
 				allwinner,pull = <0>;
-			};
-
-			sata_pwr_pin_cubieboard2: sata_pwr@0 {
-				allwinner,pins = "PB8";
-				allwinner,function = "gpio_out";
-				allwinner,drive = <0>;
-				allwinner,pull = <2>;
 			};
 		};
 

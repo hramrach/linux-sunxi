@@ -485,9 +485,6 @@ static void sunxi_pinctrl_gpio_set(struct gpio_chip *chip,
 	unsigned long flags;
 	u32 regval;
 
-	printk(KERN_CRIT "%s pin %d to %d\n",
-	       __func__, offset, value);
-
 	spin_lock_irqsave(&pctl->lock, flags);
 
 	regval = readl(pctl->membase + reg);

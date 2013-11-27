@@ -121,7 +121,7 @@ static int sunxi_ahci_phy_init(void __iomem *reg_base)
 	sunxi_clrsetbits(reg_base + AHCI_PHYCS0R,
 			 (0x7 << 20), (0x3 << 20));
 	sunxi_clrsetbits(reg_base + AHCI_PHYCS2R,
-			 (0x1f << 5), (0x19 << 15));
+			 (0x1f << 5), (0x19 << 5));
 	mdelay(5);
 
 	sunxi_setbits(reg_base + AHCI_PHYCS0R, (0x1 << 19));
@@ -227,7 +227,7 @@ static int sunxi_ahci_probe(struct platform_device *pdev)
 		return -ENOMEM;
 
 	printk("Lets probe!\n");
-	ahci_pdev = platform_device_alloc("ahci", -1);
+	ahci_pdev = platform_device_alloc("sunxi-ahci", -1);
 	if (!ahci_pdev)
 		return -ENODEV;
 	printk("device ahci allocated\n");
