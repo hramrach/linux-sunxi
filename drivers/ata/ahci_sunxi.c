@@ -97,7 +97,7 @@ static void sunxi_clrsetbits(void __iomem *reg, u32 clr_val, u32 set_val)
 
 static u32 sunxi_getbits(void __iomem *reg, u8 mask, u8 shift)
 {
-	return (readl(reg) & (mask)) >> shift;
+	return (readl(reg) >> shift) & mask;
 }
 
 static int sunxi_ahci_phy_init(void __iomem *reg_base)
@@ -163,17 +163,9 @@ static int sunxi_sata_init(struct device *dev, void __iomem *reg_base)
 	if (ret < 0)
 		return ret;
 
-	ahci_data->regulator = devm_regulator_get(dev, "pwr");
-	printk("REGULATOR is %p\n", ahci_data->regulator);
-	if (IS_ERR(ahci_data->regulator)) {
-		if (PTR_ERR(ahci_data->regulator) == -EPROBE_DEFER)
-			return -EPROBE_DEFER;
-		printk(KERN_NOTICE "Sunxi SATA AHCI no regulator found\n");
-	} else {
-		ret = regulator_enable(ahci_data->regulator);
-		if (ret)
-			return ret;
-	}
+	ret = regulator_enable(ahci_data->regulator);
+	if (ret)
+		return ret;
 
 	return sunxi_ahci_phy_init(reg_base);
 }
@@ -220,13 +212,23 @@ static int sunxi_ahci_probe(struct platform_device *pdev)
 	struct resource *mem, *irq, res[2];
 	struct platform_device *ahci_pdev;
 	struct sunxi_ahci_data *ahci_data;
+	struct regulator *regulator;
 	int ret;
+
+	printk("Lets probe!\n");
+
+	regulator = devm_regulator_get(&pdev->dev, "pwr");
+	if (IS_ERR(regulator)) {
+		ret = PTR_ERR(regulator);
+		if (ret != -EPROBE_DEFER)
+			dev_err(&pdev->dev, "no regulator found (%d)\n", ret);
+		return ret;
+	}
 
 	ahci_data = devm_kzalloc(&pdev->dev, sizeof(*ahci_data), GFP_KERNEL);
 	if (!ahci_data)
 		return -ENOMEM;
 
-	printk("Lets probe!\n");
 	ahci_pdev = platform_device_alloc("sunxi-ahci", -1);
 	if (!ahci_pdev)
 		return -ENODEV;
@@ -234,6 +236,7 @@ static int sunxi_ahci_probe(struct platform_device *pdev)
 
 	ahci_pdev->dev.parent = &pdev->dev;
 
+	ahci_data->regulator = regulator;
 	ahci_data->ahb_clk = devm_clk_get(&pdev->dev, "ahb_sata");
 	if (IS_ERR(ahci_data->ahb_clk)) {
 		ret = PTR_ERR(ahci_data->ahb_clk);
