@@ -26,7 +26,7 @@
 
 		pinctrl@01c20800 {
 			ahci_pwr_pin: ahci_pwr_pin@0 {
-				allwinner,pins = "PB8";
+				allwinner,pins = "PH12";
 				allwinner,function = "gpio_out";
 				allwinner,driver = <0>;
 				allwinner,pull = <0>;
@@ -90,7 +90,7 @@
 			regulator-min-microvolt = <5000000>;
 			regulator-max-microvolt = <5000000>;
 			pinctrl-0 = <&ahci_pwr_pin>;
-			gpio = <&pio 1 8 0>;
+			gpio = <&pio 7 12 0>;
 			enable-active-high;
 		};
 	};
