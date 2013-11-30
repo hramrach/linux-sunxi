@@ -162,6 +162,7 @@ static void __ledtrig_block_add(struct gendisk *disk)
 		}
 
 		entry->name = kasprintf(GFP_KERNEL, "%s%s", devname, suffix);
+		entry->trigger.name = entry->name;
 		if (!entry->name) {
 			kfree(entry);
 			pr_warn("LED triggers for device %s failed to register (no memory)\n",
