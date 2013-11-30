@@ -18,6 +18,9 @@
 #include <linux/of_platform.h>
 #include <linux/io.h>
 #include <linux/reboot.h>
+#include <linux/clk.h>
+#include <linux/clk-provider.h>
+#include <linux/clocksource.h>
 
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
@@ -135,9 +138,9 @@ static const char * const sun6i_board_dt_compat[] = {
 extern void __init sun6i_reset_init(void);
 static void __init sun6i_timer_init(void)
 {
-	sunxi_init_clocks();
-	sun6i_reset_init();
+	of_clk_init(NULL);
 	clocksource_of_init();
+	sun6i_reset_init();
 }
 
 DT_MACHINE_START(SUN6I_DT, "Allwinner sun6i (A31) Family")
