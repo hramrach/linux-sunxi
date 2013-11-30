@@ -67,6 +67,11 @@
 		};
 	};
 
+	ledtrig-block {
+		compatible = "ledtrig-block";
+		status = "okay";
+	};
+
 	leds {
 		compatible = "gpio-leds";
 		pinctrl-names = "default";
@@ -80,7 +85,7 @@
 
 		green {
 			label = "cubieboard2:green:usr";
-			linux,default-trigger = "default-on";
+			linux,default-trigger = "sda";
 			gpios = <&pio 7 20 0>;
 		};
 	};
