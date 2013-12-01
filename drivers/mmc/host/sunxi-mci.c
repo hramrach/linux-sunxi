@@ -28,6 +28,7 @@
 #include <linux/clk.h>
 #include <linux/clk-provider.h>
 #include <linux/clk-private.h>
+#include <linux/clk/sunxi.h>
 
 #include <linux/gpio.h>
 #include <linux/platform_device.h>
@@ -51,9 +52,6 @@
 #include <asm/uaccess.h>
 
 #include "sunxi-mci.h"
-
-// Accessing clock factors in order to set not yet supported phase shifts
-#include "../../clk/sunxi/clk-factors.h"
 
 // Where to find what in the device tree
 #define OF_AHB_CLK_POSITION 0
@@ -708,42 +706,6 @@ s32 sunxi_mmc_oclk_onoff(struct sunxi_mmc_host* smc_host, u32 oclk_en, u32 pwr_s
 	mci_writel(smc_host, REG_CLKCR, rval);
 	sunxi_mmc_update_clk(smc_host);
 	return 0;
-}
-
-/**
-* clk_sunxi_mmc_phase_control() - configures MMC clock phase control
-*/
- void clk_sunxi_mmc_phase_control(struct clk_hw *hw, u8 sample, u8 output)
-{
-	#define to_clk_composite(_hw) container_of(_hw, struct clk_composite, hw)
-	#define to_clk_factors(_hw) container_of(_hw, struct clk_factors, hw)
-
-	struct clk_composite *composite = to_clk_composite(hw);
-	struct clk_hw *rate_hw = composite->rate_hw;
-	struct clk_factors *factors = to_clk_factors(rate_hw);
-	unsigned long flags = 0;
-	u32 reg;
-
-	if (factors->lock)
-		spin_lock_irqsave(factors->lock, flags);
-
-	reg = readl(factors->reg);
-
-	/* set sample clock phase control */
-	reg &= ~(0x7 << 20);
-	reg |= ((sample & 0x7) << 20);
-
-	/* set output clock phase control */
-	reg &= ~(0x7 << 8);
-	reg |= ((output & 0x7) << 8);
-
-	/* enable special clock */
-	reg |= BIT(31);
-
-	writel(reg, factors->reg);
-
-	if (factors->lock)
-		spin_unlock_irqrestore(factors->lock, flags);
 }
 
 s32 sunxi_mmc_set_clk_dly(struct sunxi_mmc_host* smc_host, u32 oclk_dly, u32 sclk_dly)
