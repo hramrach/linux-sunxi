@@ -83,7 +83,7 @@ static inline u64 arch_counter_get_cntvct(void)
 	u64 cval;
 
 	isb();
-	asm volatile("mrrc p15, 1, %Q0, %R0, c14" : "=r" (cval));
+	asm volatile("mrrc p15, 0, %Q0, %R0, c14" : "=r" (cval));
 	return cval;
 }
 
