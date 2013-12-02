@@ -570,6 +570,14 @@ void ahci_start_engine(struct ata_port *ap)
 	void __iomem *port_mmio = ahci_port_base(ap);
 	u32 tmp;
 
+#ifdef CONFIG_ARCH_SUNXI
+	/* Setup DMA before DMA start */
+	tmp = readl(port_mmio + PORT_DMA);
+	tmp &= ~PORT_DMA_SETUP_MASK;
+	tmp |= PORT_DMA_SETUP_INIT << PORT_DMA_SETUP_OFFSET;
+	writel(tmp, port_mmio + PORT_DMA);
+#endif
+
 	/* start DMA */
 	tmp = readl(port_mmio + PORT_CMD);
 	tmp |= PORT_CMD_START;
