@@ -1,0 +1,24 @@
+Allwinner SUNXI AHCI SATA Controller
+
+SATA nodes are defined to describe on-chip Serial ATA controllers.
+Each SATA controller should have its own node.
+
+Required properties:
+- compatible	: compatible list, contains "allwinner,sun4i-a10-ahci"
+- reg		: <registers mapping>
+- interrupts	: <interrupt mapping for AHCI IRQ>
+- clocks	: clocks for ACHI
+- clock-names	: clock names for AHCI
+
+Optional properties:
+- pwr-supply	: regulator to control the power supply GPIO
+
+Example:
+	ahci@01c18000 {
+		compatible = "allwinner,sun4i-a10-ahci";
+		reg = <0x01c18000 0x1000>;
+		interrupts = <0 56 1>;
+		clocks = <&ahb_gates 25>, <&pll6 0>;
+		clock-names = "ahb_sata", "pll6_sata";
+		pwr-supply = <&reg_ahci_5v>;
+	};
