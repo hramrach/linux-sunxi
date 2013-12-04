@@ -306,6 +306,16 @@
 			#size-cells = <0>;
 		};
 
+		sdc0: sdc@01c0f000 {
+			compatible = "allwinner,sunxi-mmc";
+			reg = <0x01c0f000 0x1000>;
+			clocks = <&ahb_gates 8>, <&mmc0>;
+			interrupts = <32>;
+			bus-width = <4>;
+			idma-des-size-bits = <13>;
+			status = "disabled";
+		};
+
 		sata: ahci@01c18000 {
 			compatible = "allwinner,sun4i-a10-ahci";
 			reg = <0x01c18000 0x1000>;
@@ -383,6 +393,13 @@
 						"PA15", "PA16";
 				allwinner,function = "emac";
 				allwinner,drive = <0>;
+				allwinner,pull = <0>;
+			};
+
+			sdc0_pins_a: sdc0@0 {
+				allwinner,pins = "PF0","PF1","PF2","PF3","PF4","PF5";
+				allwinner,function = "mmc0";
+				allwinner,drive = <3>;
 				allwinner,pull = <0>;
 			};
 		};
