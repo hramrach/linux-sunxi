@@ -42,6 +42,15 @@
 			};
 		};
 
+		sdc0: sdc@01c0f000 {
+			pinctrl-names = "default";
+			pinctrl-0 = <&sdc0_pins_a>;
+			cd-gpios = <&pio 7 1 0>; /* PH1 */
+			cd-mode = <1>;
+			vmmc-supply = <&vcc_3v3_reg>;
+			status = "okay";
+		};
+
 		sata: ahci@01c18000 {
 			pwr-supply = <&reg_ahci_5v>;
 			status = "okay";
@@ -110,6 +119,14 @@
 			pinctrl-0 = <&ahci_pwr_pin>;
 			gpio = <&pio 1 8 0>;
 			enable-active-high;
+		};
+
+		vcc_3v3_reg: regulator@0 {
+			compatible = "regulator-fixed";
+			regulator-name = "vcc_3v3";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			regulator-always-on;
 		};
 	};
 };

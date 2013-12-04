@@ -202,35 +202,34 @@ static void sunxi_mmc_send_cmd(struct sunxi_mmc_host* smc_host, struct mmc_comma
 	spin_unlock_irqrestore(&smc_host->lock, iflags);
 }
 
-static void sunxi_mmc_init_idma_des(struct sunxi_mmc_host* smc_host, struct mmc_data* data)
+static void sunxi_mmc_init_idma_des(struct sunxi_mmc_host* host, struct mmc_data* data)
 {
-	struct sunxi_mmc_idma_des* pdes = (struct sunxi_mmc_idma_des*)smc_host->sg_cpu;
-	struct sunxi_mmc_idma_des* pdes_pa = (struct sunxi_mmc_idma_des*)smc_host->sg_dma;
+	struct sunxi_mmc_idma_des* pdes = (struct sunxi_mmc_idma_des*)host->sg_cpu;
+	struct sunxi_mmc_idma_des* pdes_pa = (struct sunxi_mmc_idma_des*)host->sg_dma;
 	u32 des_idx = 0;
 	u32 buff_frag_num = 0;
 	u32 remain;
 	u32 i, j;
 	u32 config;
+	const int max_len = (1 << host->idma_des_size_bits);
 
 	for (i=0; i<data->sg_len; i++) {
-		buff_frag_num = data->sg[i].length >> SDXC_DES_NUM_SHIFT;
-		remain = data->sg[i].length & (SDXC_DES_BUFFER_MAX_LEN-1);
+		buff_frag_num = data->sg[i].length >> host->idma_des_size_bits;
+		remain = data->sg[i].length & (max_len - 1);
 		if (remain)
 			buff_frag_num ++;
-		else
-			remain = SDXC_DES_BUFFER_MAX_LEN;
 
 		for (j=0; j < buff_frag_num; j++, des_idx++) {
 			memset((void*)&pdes[des_idx], 0, sizeof(struct sunxi_mmc_idma_des));
 			config = SDXC_IDMAC_DES0_CH|SDXC_IDMAC_DES0_OWN|SDXC_IDMAC_DES0_DIC;
 
-		    	if (buff_frag_num > 1 && j != buff_frag_num-1)
-				pdes[des_idx].data_buf1_sz = SDXC_DES_BUFFER_MAX_LEN;
+		    	if (j < (buff_frag_num - 1))
+				pdes[des_idx].buf_size = 0; /* 0 == max_len */
 		    	else
-				pdes[des_idx].data_buf1_sz = remain;
+				pdes[des_idx].buf_size = remain;
 
 			pdes[des_idx].buf_addr_ptr1 = sg_dma_address(&data->sg[i])
-							+ j * SDXC_DES_BUFFER_MAX_LEN;
+							+ j * max_len;
 			if (i==0 && j==0)
 				config |= SDXC_IDMAC_DES0_FD;
 
@@ -242,7 +241,7 @@ static void sunxi_mmc_init_idma_des(struct sunxi_mmc_host* smc_host, struct mmc_
 				pdes[des_idx].buf_addr_ptr2 = (u32)&pdes_pa[des_idx+1];
 			}
 			pdes[des_idx].config = config;
-			SMC_INFO(smc_host, "sg %d, frag %d, remain %d, des[%d](%08x): "
+			SMC_INFO(host, "sg %d, frag %d, remain %d, des[%d](%08x): "
 		    		"[0] = %08x, [1] = %08x, [2] = %08x, [3] = %08x\n", i, j, remain,
 				des_idx, (u32)&pdes[des_idx],
 				(u32)((u32*)&pdes[des_idx])[0], (u32)((u32*)&pdes[des_idx])[1],
@@ -491,6 +490,8 @@ static int sunxi_mmc_resource_request(struct sunxi_mmc_host *host)
 
 	of_property_read_u32(np, "cd-mode", &host->cd_mode);
 	of_property_read_u32(np, "bus-width", &host->bus_width);
+	of_property_read_u32(np, "idma-des-size-bits",
+			     &host->idma_des_size_bits);
 
 	SMC_DBG(host,"%s: WP-GPIO=%i,CD-GPIO=%i",__FUNCTION__,host->wp_pin,host->cd_pin);
 

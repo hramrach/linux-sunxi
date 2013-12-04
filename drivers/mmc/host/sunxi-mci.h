@@ -183,8 +183,6 @@
 #define SDXC_IDMA_ERR (SDXC_IDMACFatalBusErr|SDXC_IDMACDesInvalid \
 			|SDXC_IDMACCardErrSum|SDXC_IDMACAbnormalIntSum)
 
-#define SDXC_DES_NUM_SHIFT	(15)
-#define SDXC_DES_BUFFER_MAX_LEN	(1U << SDXC_DES_NUM_SHIFT)
 struct sunxi_mmc_idma_des {
 	u32	config;
 #define SDXC_IDMAC_DES0_DIC	BIT(1) // disable interrupt on completion
@@ -195,8 +193,14 @@ struct sunxi_mmc_idma_des {
 #define SDXC_IDMAC_DES0_CES	BIT(30) // card error summary
 #define SDXC_IDMAC_DES0_OWN	BIT(31) // des owner:1-idma owns it, 0-host owns it
 
-	u32	data_buf1_sz    :16,
-		data_buf2_sz    :16;
+	/*
+	 * If the idma-des-size-bits of property is ie 13, bufsize bits are:
+	 *  Bits  0-12: buf1 size
+	 *  Bits 13-25: buf2 size
+	 *  Bits 26-31: not used
+	 * Since we only ever set buf1 size, we can simply store it directly.
+	 */
+	u32	buf_size;
 	u32	buf_addr_ptr1;
 	u32	buf_addr_ptr2;
 };
@@ -222,6 +226,7 @@ struct sunxi_mmc_host {
 	/* ios information */
 	u32 		clk_mod_rate;
 	u32 		bus_width;
+	u32		idma_des_size_bits;
 	u32 		ddr;
 	u32 		voltage_switching;
 	struct regulator *regulator;

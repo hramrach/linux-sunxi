@@ -581,6 +581,7 @@
 			clocks = <&ahb_gates 8>, <&mmc0>;
 			interrupts = <0 32 4>;
 			bus-width = <4>;
+			idma-des-size-bits = <16>;
 			status = "disabled";
 		};
 
