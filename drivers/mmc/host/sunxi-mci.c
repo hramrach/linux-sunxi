@@ -373,17 +373,6 @@ void sunxi_mmc_dump_errinfo(struct sunxi_mmc_host* smc_host)
 		);
 }
 
-s32 sunxi_mmc_wait_access_done(struct sunxi_mmc_host* smc_host)
-{
-	s32 own_set = 0;
-	unsigned long expire = jiffies + msecs_to_jiffies(5);
-	while (!(mci_readl(smc_host, REG_GCTRL) & SDXC_MemAccessDone) && jiffies < expire);
-	if (!(mci_readl(smc_host, REG_GCTRL) & SDXC_MemAccessDone)) {
-		SMC_MSG(smc_host, "wait memory access done timeout !!\n");
-	}
-	return own_set;
-}
-
 s32 sunxi_mmc_request_done(struct sunxi_mmc_host* smc_host)
 {
 	struct mmc_request* req = smc_host->mrq;
@@ -421,7 +410,6 @@ out:
 	if (req->data) {
 		struct mmc_data* data = req->data;
 
-		sunxi_mmc_wait_access_done(smc_host);
 		mci_writel(smc_host, REG_IDST, 0x337);
 		mci_writel(smc_host, REG_IDIE, 0);
 		mci_writel(smc_host, REG_DMAC, 0);
