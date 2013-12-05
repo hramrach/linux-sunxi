@@ -434,9 +434,18 @@ static int sunxi_mmc_resource_request(struct sunxi_mmc_host *host)
 {
 	struct platform_device *pdev = host->pdev;
 	struct device_node *np = pdev->dev.of_node;
-	struct mmc_supply supply;
 	struct resource *regs;
 	int ret = 0;
+
+	host->regulator = devm_regulator_get(&pdev->dev, "vmmc");
+	if (IS_ERR(host->regulator)) {
+			if (PTR_ERR(host->regulator) == -EPROBE_DEFER)
+				return -EPROBE_DEFER;
+			else
+				dev_info(&pdev->dev, "no regulator found\n");
+	}
+	host->mmc->supply.vmmc = host->regulator;
+	host->mmc->supply.vqmmc = NULL;
 
 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!regs)
@@ -468,16 +477,6 @@ static int sunxi_mmc_resource_request(struct sunxi_mmc_host *host)
 		ret = -ENOMEM;
 		goto free_mod_clk;
 	}
-
-	host->regulator = devm_regulator_get(&pdev->dev, "vmmc");
-	if (IS_ERR(host->regulator)) {
-			if (PTR_ERR(host->regulator) == -EPROBE_DEFER)
-				return -EPROBE_DEFER;
-			else
-				dev_info(&pdev->dev, "no regulator found\n");
-	}
-	supply.vmmc = host->regulator;
-	host->mmc->supply = supply;
 
 	host->wp_pin=of_get_named_gpio(np, "wp-gpios", 0);
 	if (gpio_is_valid(host->wp_pin)) {
