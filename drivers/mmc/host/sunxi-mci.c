@@ -1034,9 +1034,18 @@ static int __init sunxi_mmc_probe(struct platform_device *pdev)
 	mmc->max_req_size	= mmc->max_blk_size * mmc->max_blk_count;
 	mmc->max_seg_size	= mmc->max_req_size;
 	mmc->max_segs	    = 128;
-	//400kHz ~ 52MHz
+	//400kHz ~ 50MHz
 	mmc->f_min			=   400000;
-	mmc->f_max			= 52000000;
+	mmc->f_max			= 50000000;
+	//available voltages
+	mmc->ocr_avail = mmc_regulator_get_ocrmask(smc_host->regulator);
+	mmc->caps =
+		MMC_CAP_4_BIT_DATA | MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED
+			| MMC_CAP_UHS_SDR12 | MMC_CAP_UHS_SDR25 | MMC_CAP_UHS_SDR50
+//			| MMC_CAP_UHS_DDR50
+//			| MMC_CAP_NEEDS_POLL;
+//			| MMC_CAP_SDIO_IRQ
+			| MMC_CAP_DRIVER_TYPE_A;
 
 	ret = mmc_add_host(mmc);
 	if (ret) {
