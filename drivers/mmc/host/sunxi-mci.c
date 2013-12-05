@@ -81,8 +81,6 @@ static s32 sunxi_mmc_init_host(struct mmc_host* mmc)
 	rval &= ~SDXC_AccessDoneDirect;
 	mci_writel(smc_host, REG_GCTRL, rval);
 
-	smc_host->voltage = SDC_WOLTAGE_OFF;
-
 	return 0;
 }
 
@@ -92,7 +90,6 @@ s32 sunxi_mmc_exit_host(struct sunxi_mmc_host* smc_host)
 
 	SMC_DBG(smc_host, "MMC Driver exit host %d\n", smc_host->mmc->index);
 	smc_host->ferror = 0;
-	smc_host->voltage = SDC_WOLTAGE_OFF;
 
 	rval = mci_readl(smc_host, REG_GCTRL) | SDXC_HWReset;
 	mci_writel(smc_host, REG_GCTRL, SDXC_HWReset);
@@ -137,7 +134,7 @@ s32 sunxi_mmc_exit_host(struct sunxi_mmc_host* smc_host)
 /*  * 200M     5ns     600M    1.67ns  1.4ns   0.8ns   1     3.33ns    1.67ns */
 /*  *\/ */
 
-s32 sunxi_mmc_oclk_onoff(struct sunxi_mmc_host* smc_host, u32 oclk_en, u32 pwr_save);
+s32 sunxi_mmc_oclk_onoff(struct sunxi_mmc_host* smc_host, u32 oclk_en);
 
 static void sunxi_mmc_send_cmd(struct sunxi_mmc_host* smc_host, struct mmc_command* cmd)
 {
@@ -157,7 +154,7 @@ static void sunxi_mmc_send_cmd(struct sunxi_mmc_host* smc_host, struct mmc_comma
 		imask |= SDXC_VolChgDone;
 		smc_host->voltage_switching = 1;
 		wait = SDC_WAIT_SWITCH1V8;
-		sunxi_mmc_oclk_onoff(smc_host, 1, 0);
+		sunxi_mmc_oclk_onoff(smc_host, 1);
 	}
 
 	if (cmd->flags & MMC_RSP_PRESENT) {
@@ -197,7 +194,6 @@ static void sunxi_mmc_send_cmd(struct sunxi_mmc_host* smc_host, struct mmc_comma
 
 	spin_lock_irqsave(&smc_host->lock, iflags);
 	smc_host->wait = wait;
-	smc_host->state = SDC_STATE_SENDCMD;
 	mci_writew(smc_host, REG_IMASK, imask);
 	mci_writel(smc_host, REG_CARG, cmd->arg);
 	mci_writel(smc_host, REG_CMDR, cmd_val);
@@ -264,9 +260,6 @@ static int sunxi_mmc_prepare_dma(struct sunxi_mmc_host* smc_host, struct mmc_dat
 	struct scatterlist *sg;
 
 	SMC_DBG(smc_host, "%s\n",__FUNCTION__);
-
-	if (smc_host->sg_cpu == NULL)
-		return -ENOMEM;
 
 	dma_len = dma_map_sg(mmc_dev(smc_host->mmc), data->sg, data->sg_len,
 			(data->flags & MMC_DATA_WRITE) ? DMA_TO_DEVICE : DMA_FROM_DEVICE);
@@ -471,6 +464,7 @@ static int sunxi_mmc_resource_request(struct sunxi_mmc_host *host)
 	host->sg_cpu = dma_alloc_writecombine(NULL, PAGE_SIZE, &host->sg_dma, GFP_KERNEL);
 	if (!host->sg_cpu) {
 		dev_err(&pdev->dev, "Failed to allocate DMA descriptor\n");
+		ret = -ENOMEM;
 		goto free_mod_clk;
 	}
 
@@ -512,10 +506,8 @@ resource_request_out:
 
 static int sunxi_mmc_resource_release(struct sunxi_mmc_host *host)
 {
-	if (host->sg_cpu) {
-		dma_free_coherent(NULL, PAGE_SIZE,
-				  host->sg_cpu, host->sg_dma);
-	}
+	dma_free_coherent(NULL, PAGE_SIZE,
+			  host->sg_cpu, host->sg_dma);
 	clk_put(host->clk_ahb);
 	clk_put(host->clk_mod);
 	return 0;
@@ -529,12 +521,10 @@ static void sunxi_mmc_finalize_request(struct sunxi_mmc_host *smc_host)
 	spin_lock_irqsave(&smc_host->lock, iflags);
 	if (smc_host->wait != SDC_WAIT_FINALIZE) {
 		spin_unlock_irqrestore(&smc_host->lock, iflags);
-		SMC_MSG(smc_host, "nothing finalize, wt %x, st %d\n",
-				smc_host->wait, smc_host->state);
+		SMC_MSG(smc_host, "nothing finalize, wt %x\n", smc_host->wait);
 		return;
 	}
 	smc_host->wait = SDC_WAIT_NONE;
-	smc_host->state = SDC_STATE_IDLE;
 	smc_host->trans_done = 0;
 	smc_host->dma_done = 0;
 	spin_unlock_irqrestore(&smc_host->lock, iflags);
@@ -617,7 +607,6 @@ static irqreturn_t sunxi_mmc_irq(int irq, void *dev_id)
 	if ((raw_int & SDXC_IntErrBit) || (idma_int & SDXC_IDMA_ERR)) {
 		smc_host->error = raw_int & SDXC_IntErrBit;
 		smc_host->wait = SDC_WAIT_FINALIZE;
-		smc_host->state = SDC_STATE_CMDDONE;
 		goto irq_out;
 	}
 	if (idma_int & (SDXC_IDMACTransmitInt|SDXC_IDMACReceiveInt))
@@ -630,7 +619,6 @@ static irqreturn_t sunxi_mmc_irq(int irq, void *dev_id)
 					|| smc_host->wait == SDC_WAIT_SWITCH1V8))
 		|| (smc_host->trans_done && smc_host->dma_done && (smc_host->wait & SDC_WAIT_DMA_DONE))) {
 		smc_host->wait = SDC_WAIT_FINALIZE;
-		smc_host->state = SDC_STATE_CMDDONE;
 	}
 
 irq_out:
@@ -683,13 +671,13 @@ s32 sunxi_mmc_update_clk(struct sunxi_mmc_host* smc_host)
 	return ret;
 }
 
-s32 sunxi_mmc_oclk_onoff(struct sunxi_mmc_host* smc_host, u32 oclk_en, u32 pwr_save)
+s32 sunxi_mmc_oclk_onoff(struct sunxi_mmc_host* smc_host, u32 oclk_en)
 {
 	u32 rval = mci_readl(smc_host, REG_CLKCR);
 	rval &= ~(SDXC_CardClkOn | SDXC_LowPowerOn);
 	if (oclk_en)
 		rval |= SDXC_CardClkOn;
-	if (pwr_save || !smc_host->io_flag)
+	if (!smc_host->io_flag)
 		rval |= SDXC_LowPowerOn;
 	mci_writel(smc_host, REG_CLKCR, rval);
 	sunxi_mmc_update_clk(smc_host);
@@ -705,8 +693,6 @@ s32 sunxi_mmc_set_clk_dly(struct sunxi_mmc_host* smc_host, u32 oclk_dly, u32 scl
 	clk_sunxi_mmc_phase_control(hw, sclk_dly, oclk_dly);
 	spin_unlock_irqrestore(&smc_host->lock, iflags);
 
-	smc_host->oclk_dly = oclk_dly;
-	smc_host->sclk_dly = sclk_dly;
 	SMC_DBG(smc_host, "oclk_dly %d, sclk_dly %d\n", oclk_dly, sclk_dly);
 	return 0;
 }
@@ -725,12 +711,10 @@ static void sunxi_mmc_clk_set_rate(struct sunxi_mmc_host *smc_host, unsigned int
 {
 	u32 newrate;
 	u32 src_clk;
-	u32 oclk_dly = 2;
-	u32 sclk_dly = 2;
+	u32 oclk_dly;
+	u32 sclk_dly;
 	u32 temp;
 	struct sunxi_mmc_clk_dly* dly = NULL;
-
-	SMC_DBG(smc_host,"%s: requested rate %i\n", __FUNCTION__, rate);
 
 	newrate = clk_round_rate(smc_host->clk_mod, rate);
 
@@ -748,12 +732,12 @@ static void sunxi_mmc_clk_set_rate(struct sunxi_mmc_host *smc_host, unsigned int
 	smc_host->clk_mod_rate = newrate = clk_get_rate(smc_host->clk_mod);
 	SMC_DBG(smc_host,"%s: mod0 clock is now: %i\n",__FUNCTION__,newrate);
 
-	sunxi_mmc_oclk_onoff(smc_host, 0, 0); // disabling SDn-CLK output
+	sunxi_mmc_oclk_onoff(smc_host, 0); // disabling SDn-CLK output
 	/* clear internal divider */
 	temp = mci_readl(smc_host, REG_CLKCR);
 	temp &= ~0xff;
 	mci_writel(smc_host, REG_CLKCR, temp);
-	sunxi_mmc_oclk_onoff(smc_host, 0, 0); // disabling SDn-CLK output
+	sunxi_mmc_oclk_onoff(smc_host, 0); // disabling SDn-CLK output
 
 	/* determing right delay */
 	if (rate <= 400000) {
@@ -788,13 +772,7 @@ static void sunxi_mmc_clk_set_rate(struct sunxi_mmc_host *smc_host, unsigned int
 	}
 
 	sunxi_mmc_set_clk_dly(smc_host, oclk_dly, sclk_dly);
-	sunxi_mmc_oclk_onoff(smc_host, 1, 0);
-}
-
-static int sunxi_mmc_execute_tuning(struct mmc_host *mmc, u32 opcode)
-{
-	printk("%s: opcode = %i\n",__FUNCTION__,opcode);
-	return 0;
+	sunxi_mmc_oclk_onoff(smc_host, 1);
 }
 
 static void sunxi_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
@@ -995,7 +973,6 @@ static struct mmc_host_ops sunxi_mmc_ops = {
 	.get_cd		= sunxi_mmc_card_present,
 // 	.enable_sdio_irq= sunxi_mmc_enable_sdio_irq,
 	.hw_reset	= sunxi_mmc_hw_reset,
-	.execute_tuning = sunxi_mmc_execute_tuning,
 };
 
 static int __init sunxi_mmc_probe(struct platform_device *pdev)
@@ -1018,7 +995,6 @@ static int __init sunxi_mmc_probe(struct platform_device *pdev)
 #endif
 	smc_host->mmc	= mmc;
 	smc_host->pdev	= pdev;
-	smc_host->pdata	= dev_get_platdata(&pdev->dev);
 	spin_lock_init(&smc_host->lock);
 	tasklet_init(&smc_host->tasklet, sunxi_mmc_tasklet, (unsigned long) smc_host);
 
