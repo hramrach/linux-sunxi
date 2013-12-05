@@ -349,8 +349,17 @@ int sunxi_mmc_send_manual_stop(struct sunxi_mmc_host* smc_host, struct mmc_reque
 
 void sunxi_mmc_dump_errinfo(struct sunxi_mmc_host* smc_host)
 {
-	SMC_ERR(smc_host, "smc %d err, cmd %d, %s%s%s%s%s%s%s%s%s%s !!\n",
-		smc_host->mmc->index, smc_host->mrq->cmd ? smc_host->mrq->cmd->opcode : -1,
+	struct mmc_command *cmd = smc_host->mrq->cmd;
+	struct mmc_data* data = smc_host->mrq->data;
+
+	/* For some cmds timeout is normal with sd/mmc cards */
+	if ((smc_host->int_sum & SDXC_IntErrBit) == SDXC_RespTimeout &&
+			(cmd->opcode == 5 || cmd->opcode == 52))
+		return;
+
+	SMC_ERR(smc_host, "smc %d err, cmd %d,%s%s%s%s%s%s%s%s%s%s%s !!\n",
+		smc_host->mmc->index, cmd->opcode,
+		data ? (data->flags & MMC_DATA_WRITE ? " WR" : " RD") : "",
 		smc_host->int_sum & SDXC_RespErr     ? " RE"     : "",
 		smc_host->int_sum & SDXC_RespCRCErr  ? " RCE"    : "",
 		smc_host->int_sum & SDXC_DataCRCErr  ? " DCE"    : "",
@@ -394,10 +403,6 @@ s32 sunxi_mmc_request_done(struct sunxi_mmc_host* smc_host)
 		}
 
 		sunxi_mmc_dump_errinfo(smc_host);
-		if (req->data)
-			SMC_ERR(smc_host, "In data %s operation\n",
-				req->data->flags & MMC_DATA_WRITE ? "write" : "read");
-		ret = -1;
 		goto out;
 	}
 
@@ -431,11 +436,6 @@ out:
 	}
 
 	mci_writew(smc_host, REG_IMASK, 0);
-	if (smc_host->int_sum & (SDXC_RespErr | SDXC_HardWLocked | SDXC_RespTimeout)) {
-		SMC_DBG(smc_host, "sdc %d abnormal status: %s\n", smc_host->mmc->index,
-			smc_host->int_sum & SDXC_HardWLocked ? "HardWLocked" : "RespErr");
-	}
-
 	mci_writew(smc_host, REG_RINTR, 0xffff);
 
 	SMC_DBG(smc_host, "smc %d done, resp %08x %08x %08x %08x\n", smc_host->mmc->index,
