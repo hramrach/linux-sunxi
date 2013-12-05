@@ -461,7 +461,8 @@ static int sunxi_mmc_resource_request(struct sunxi_mmc_host *host)
 		SMC_DBG(host,"%s: got clk_mod, name is %s\n", __FUNCTION__, __clk_get_name(host->clk_mod));
 	}
 
-	host->sg_cpu = dma_alloc_writecombine(NULL, PAGE_SIZE, &host->sg_dma, GFP_KERNEL);
+	host->sg_cpu = dma_alloc_coherent(mmc_dev(host->mmc), PAGE_SIZE,
+					  &host->sg_dma, GFP_KERNEL);
 	if (!host->sg_cpu) {
 		dev_err(&pdev->dev, "Failed to allocate DMA descriptor\n");
 		ret = -ENOMEM;
@@ -506,7 +507,7 @@ resource_request_out:
 
 static int sunxi_mmc_resource_release(struct sunxi_mmc_host *host)
 {
-	dma_free_coherent(NULL, PAGE_SIZE,
+	dma_free_coherent(mmc_dev(host->mmc), PAGE_SIZE,
 			  host->sg_cpu, host->sg_dma);
 	clk_put(host->clk_ahb);
 	clk_put(host->clk_mod);
