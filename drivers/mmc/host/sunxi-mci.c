@@ -372,17 +372,6 @@ s32 sunxi_mmc_request_done(struct sunxi_mmc_host* smc_host)
 	s32 ret = 0;
 
 	if (smc_host->int_sum & SDXC_IntErrBit) {
-		/* if we got response timeout error information, we should check
-		   if the command done status has been set. if there is no command
-		   done information, we should wait this bit to be set */
-		if ((smc_host->int_sum & SDXC_RespTimeout) && !(smc_host->int_sum & SDXC_CmdDone)) {
-			u32 rint;
-			unsigned long expire = jiffies + msecs_to_jiffies(200);
-			do {
-				rint = mci_readl(smc_host, REG_RINTR);
-			} while (jiffies < expire && !(rint & SDXC_CmdDone));
-		}
-
 		sunxi_mmc_dump_errinfo(smc_host);
 		goto out;
 	}
