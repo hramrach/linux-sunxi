@@ -71,7 +71,7 @@ static s32 sunxi_mmc_init_host(struct mmc_host* mmc)
 	rval = mci_readl(smc_host, REG_GCTRL) | SDXC_HWReset;
 	mci_writel(smc_host, REG_GCTRL, rval);
 
-	mci_writel(smc_host, REG_FTRGL, 0x70008);
+	mci_writel(smc_host, REG_FTRGL, 0x20070008);
 	mci_writel(smc_host, REG_TMOUT, 0xffffffff);
 	mci_writel(smc_host, REG_IMASK, 0);
 	mci_writel(smc_host, REG_RINTR, 0xffffffff);
@@ -760,6 +760,11 @@ static void sunxi_mmc_clk_set_rate(struct sunxi_mmc_host *smc_host, unsigned int
 	smc_host->clk_mod_rate = newrate = clk_get_rate(smc_host->clk_mod);
 	SMC_DBG(smc_host,"%s: mod0 clock is now: %i\n",__FUNCTION__,newrate);
 
+	sunxi_mmc_oclk_onoff(smc_host, 0, 0); // disabling SDn-CLK output
+	/* clear internal divider */
+	temp = mci_readl(smc_host, REG_CLKCR);
+	temp &= ~0xff;
+	mci_writel(smc_host, REG_CLKCR, temp);
 	sunxi_mmc_oclk_onoff(smc_host, 0, 0); // disabling SDn-CLK output
 
 	/* determing right delay */
