@@ -201,25 +201,13 @@ struct sunxi_mmc_idma_des {
 	u32	buf_addr_ptr2;
 };
 
-struct sunxi_mmc_ctrl_regs {
-	u32 gctrl;
-	u32 clkc;
-	u32 timeout;
-	u32 buswid;
-	u32 waterlvl;
-	u32 funcsel;
-	u32 debugc;
-	u32 idmacc;
-};
-
 struct sunxi_mmc_host {
 	struct platform_device *pdev;
 	struct mmc_host *mmc;
-	struct sunxi_mmc_platform_data *pdata;
 
 	/* IO mapping base */
 	void __iomem *reg_base;
-	void __iomem *clk_mod_reg_base;
+
 	spinlock_t lock;
 	struct tasklet_struct tasklet;
 
@@ -232,17 +220,9 @@ struct sunxi_mmc_host {
 	int cd_pin;
 
 	/* ios information */
-	u32 		clk_mod_rate:1;
-	u32 		card_clk;
-	u32 		oclk_dly;
-	u32 		sclk_dly;
+	u32 		clk_mod_rate;
 	u32 		bus_width;
 	u32 		ddr;
-	u32 		voltage;
-#define SDC_WOLTAGE_3V3 (0)
-#define SDC_WOLTAGE_1V8 (1)
-#define SDC_WOLTAGE_1V2 (2)
-#define SDC_WOLTAGE_OFF (3)
 	u32 		voltage_switching;
 	struct regulator *regulator;
 	u32 		present;
@@ -251,8 +231,12 @@ struct sunxi_mmc_host {
 	int 		irq;
 	volatile u32	int_sum;
 
+	/* flags */
 	volatile u32 	trans_done:1;
 	volatile u32 	dma_done:1;
+	u32		power_on:1;
+	u32		io_flag:1;
+
 	dma_addr_t	sg_dma;
 	void		*sg_cpu;
 
@@ -270,39 +254,15 @@ struct sunxi_mmc_host {
 #define SDC_WAIT_ERROR		(1<<6)
 #define SDC_WAIT_SWITCH1V8	(1<<7)
 #define SDC_WAIT_FINALIZE	(1<<8)
-	volatile u32	state;
-#define SDC_STATE_IDLE		(0)
-#define SDC_STATE_SENDCMD	(1)
-#define SDC_STATE_CMDDONE	(2)
 
 	struct timer_list cd_timer;
-	u32 pio_hdle;
-	s32 cd_hdle;
 	s32 cd_mode;
 #define CARD_DETECT_BY_GPIO_POLL (1)	/* mmc detected by gpio check */
 #define CARD_DETECT_BY_GPIO_IRQ  (2)	/* mmc detected by gpio irq */
 #define CARD_ALWAYS_PRESENT      (3)	/* mmc always present, without detect pin */
 #define CARD_DETECT_BY_FS        (4)	/* mmc insert/remove by fs, /proc/sunxi-mmc.x/insert node */
 
-	u32 power_on:8;
-	u32 read_only:8;
-	u32 io_flag:8;
-	u32 suspend:8;
-
 	u32 debuglevel;
-#ifdef CONFIG_PROC_FS
-	struct proc_dir_entry *proc_root;
-	struct proc_dir_entry *proc_drvver;
-	struct proc_dir_entry *proc_hostinfo;
-	struct proc_dir_entry *proc_dbglevel;
-	struct proc_dir_entry *proc_regs;
-	struct proc_dir_entry *proc_insert;
-	struct proc_dir_entry *proc_cdmode;
-	struct proc_dir_entry *proc_iodrive;
-#endif
-
-	/* backup register structrue */
-	struct sunxi_mmc_ctrl_regs bak_regs;
 };
 
 #define SMC_MSG(d, ...) do { printk("[mmc]: "__VA_ARGS__); } while(0)
