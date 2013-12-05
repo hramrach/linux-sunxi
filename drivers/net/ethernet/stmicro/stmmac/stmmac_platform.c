@@ -47,6 +47,7 @@ static int stmmac_probe_config_dt(struct platform_device *pdev,
 		plat->bus_id = 0;
 
 	of_property_read_u32(np, "snps,phy-addr", &plat->phy_addr);
+	plat->force_sf_dma_mode = of_property_read_bool(np, "snps,force_sf_dma_mode");
 
 	plat->mdio_bus_data = devm_kzalloc(&pdev->dev,
 					   sizeof(struct stmmac_mdio_bus_data),
