@@ -206,6 +206,8 @@ static void sun7i_gmac_exit(struct platform_device *pdev)
 
 static struct plat_stmmacenet_data sun7i_gmac_data = {
 	.has_gmac = 1,
+	.tx_coe = 1,
+	.force_sf_dma_mode = 1,
 	.init = sun7i_gmac_init,
 	.exit = sun7i_gmac_exit,
 };
