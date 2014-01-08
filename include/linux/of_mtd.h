@@ -9,12 +9,15 @@
 #ifndef __LINUX_OF_MTD_H
 #define __LINUX_OF_NET_H
 
+#include <linux/mtd/nand.h>
+
 #ifdef CONFIG_OF_MTD
 
 #include <linux/of.h>
 int of_get_nand_ecc_mode(struct device_node *np);
 int of_get_nand_bus_width(struct device_node *np);
 bool of_get_nand_on_flash_bbt(struct device_node *np);
+int of_get_nand_timings(struct device_node *np, struct nand_timings *timings);
 
 #else /* CONFIG_OF_MTD */
 
@@ -31,6 +34,12 @@ static inline int of_get_nand_bus_width(struct device_node *np)
 static inline bool of_get_nand_on_flash_bbt(struct device_node *np)
 {
 	return false;
+}
+
+static inline int of_get_nand_timings(struct device_node *np,
+				      struct nand_timings *timings)
+{
+	return -ENOSYS;
 }
 
 #endif /* CONFIG_OF_MTD */
