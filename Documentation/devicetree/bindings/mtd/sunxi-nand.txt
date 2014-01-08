@@ -1,0 +1,71 @@
+Allwinner NAND Flash Controller (NFC)
+
+Required properties:
+- compatible : "allwinner,sun4i-nfc".
+- reg : shall contain registers location and length for data and reg.
+- interrupts : shall define the NFC interrupt.
+- #address-cells: shall be set to 1. Encode the nand CS.
+- #size-cells : shall be set to 0.
+- clocks : shall reference NFC clocks.
+- clock-names : NFC internal clock names. Shall contain :
+    * "ahb_clk" : AHB gating clock
+    * "sclk" : NFC clock
+
+Optional children nodes:
+Children nodes represent the available nand chips.
+
+Required properties:
+- reg : shall contain the CS ids (a given chip might use several CS)
+- tCLS-min : see Documentation/devicetree/mtd/nand.txt
+- tCLH-min : Documentation/devicetree/mtd/nand.txt
+- tCS-min : see Documentation/devicetree/mtd/nand.txt
+- tCH-min : see Documentation/devicetree/mtd/nand.txt
+- tWP-min : see Documentation/devicetree/mtd/nand.txt
+- tWH-min : see Documentation/devicetree/mtd/nand.txt
+- tALS-min : see Documentation/devicetree/mtd/nand.txt
+- tDS-min : see Documentation/devicetree/mtd/nand.txt
+- tDH-min : see Documentation/devicetree/mtd/nand.txt
+- tRR-min : see Documentation/devicetree/mtd/nand.txt
+- tALH-min : see Documentation/devicetree/mtd/nand.txt
+- tRP-min : see Documentation/devicetree/mtd/nand.txt
+- tREH-min : see Documentation/devicetree/mtd/nand.txt
+- tRC-min : see Documentation/devicetree/mtd/nand.txt
+- tWC-min : see Documentation/devicetree/mtd/nand.txt
+
+Optional properties:
+- allwinner,rb : shall contain the native Ready/Busy ids.
+ or
+- rb-gpios : shall contain the gpios used as R/B pins.
+
+see Documentation/devicetree/mtd/nand.txt for generic bindings.
+
+
+Examples:
+nfc: nand@01c03000 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&nand_pins_a &nand_cs0_pins_a &nand_rb0_pins_a>;
+	status = "okay";
+
+	nand@0 {
+		reg = <0>;
+		allwinner,rb = <0>;
+		nand-ecc-mode = "soft_bch";
+
+		/* nand timings */
+		tCLS-min = <6>;
+		tCLH-min = <3>;
+		tCS-min = <20>;
+		tCH-min = <5>;
+		tWP-min = <8>;
+		tWH-min = <6>;
+		tALS-min = <6>;
+		tDS-min = <6>;
+		tDH-min = <2>;
+		tRR-min = <20>;
+		tALH-min = <3>;
+		tRP-min = <8>;
+		tREH-min = <6>;
+		tRC-min = <16>;
+		tWC-min = <16>;
+	};
+};
