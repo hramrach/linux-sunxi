@@ -508,6 +508,30 @@
 				allwinner,drive = <0>;
 				allwinner,pull = <0>;
 			};
+
+nand_pins_a: nand_base0@0 {
+			     allwinner,pins = "PC0", "PC1", "PC2",
+				     "PC5", "PC8", "PC9", "PC10",
+				     "PC11", "PC12", "PC13", "PC14",
+				     "PC15", "PC16";
+			     allwinner,function = "nand0";
+			     allwinner,drive = <0>;
+			     allwinner,pull = <0>;
+	     };
+
+nand_cs0_pins_a: nand_cs@0 {
+				 allwinner,pins = "PC4";
+				 allwinner,function = "nand0";
+				 allwinner,drive = <0>;
+				 allwinner,pull = <0>;
+		 };
+
+nand_rb0_pins_a: nand_rb@0 {
+				 allwinner,pins = "PC6";
+				 allwinner,function = "nand0";
+				 allwinner,drive = <0>;
+				 allwinner,pull = <0>;
+		 };
 		};
 
 		sata: ahci@01c18000 {
