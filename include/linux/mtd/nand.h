@@ -805,4 +805,48 @@ static inline bool nand_is_slc(struct nand_chip *chip)
 {
 	return chip->bits_per_cell == 1;
 }
+
+/**
+ * struct nand_timings - NAND chip timing definitions
+ *
+ * This struct defines the timing requirements of a NAND chip.
+ * These informations can be found in every NAND datasheets.
+ *
+ * All fields are optional and depend on the hardware driver requirements
+ */
+struct nand_timings {
+	u32 tCLS_min;
+	u32 tCLH_min;
+	u32 tCS_min;
+	u32 tCH_min;
+	u32 tWP_min;
+	u32 tALS_min;
+	u32 tALH_min;
+	u32 tDS_min;
+	u32 tDH_min;
+	u32 tWC_min;
+	u32 tWH_min;
+	u32 tR_max;
+	u32 tAR_min;
+	u32 tCLR_min;
+	u32 tRR_min;
+	u32 tRP_min;
+	u32 tWB_max;
+	u32 tRC_min;
+	u32 tREA_max;
+	u32 tRHZ_max;
+	u32 tCHZ_max;
+	u32 tRHOH_min;
+	u32 tRLOH_min;
+	u32 tCOH_min;
+	u32 tREH_min;
+	u32 tWHR_min;
+	u32 tRHW_min;
+	u32 tIR_min;
+	u32 tCR_min;
+	u32 tADL_min;
+	u32 tRST_max;
+	u32 tWW_min;
+};
+
 #endif /* __LINUX_MTD_NAND_H */
