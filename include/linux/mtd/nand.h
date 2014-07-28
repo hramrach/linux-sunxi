@@ -991,7 +991,7 @@ static inline void nand_rnd_write_buf(struct mtd_info *mtd, const uint8_t *buf,
 {
 	struct nand_chip *chip = mtd->priv;
 
-	if (chip->cur_rnd && chip->cur_rnd->read_buf)
+	if (chip->cur_rnd && chip->cur_rnd->write_buf)
 		chip->cur_rnd->write_buf(mtd, buf, len);
 	else
 		chip->write_buf(mtd, buf, len);
