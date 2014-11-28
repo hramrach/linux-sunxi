@@ -706,6 +706,13 @@
 	bus-width = <8>;
 };
 
+&mmc1_pwrseq {
+	reset-gpios = <&gpx0 1 GPIO_ACTIVE_LOW>, /* WIFI_RSTn */
+		      <&gpx0 0 GPIO_ACTIVE_LOW>; /* WIFI_EN */
+	clocks = <&max77802 MAX77802_CLK_32K_CP>;
+	clock-names = "ref_clock";
+};
+
 &mmc_1 {
 	status = "okay";
 	num-slots = <1>;
@@ -719,7 +726,7 @@
 	samsung,dw-mshc-ddr-timing = <0 2>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&sd1_clk>, <&sd1_cmd>, <&sd1_int>, <&sd1_bus1>,
-		    <&sd1_bus4>, <&sd1_bus8>, <&wifi_en>;
+		    <&sd1_bus4>, <&sd1_bus8>, <&wifi_en>, <&wifi_rst>;
 	bus-width = <4>;
 	cap-sd-highspeed;
 	mmc-pwrseq = <&mmc1_pwrseq>;
@@ -747,6 +754,13 @@
 
 	wifi_en: wifi-en {
 		samsung,pins = "gpx0-0";
+		samsung,pin-function = <1>;
+		samsung,pin-pud = <0>;
+		samsung,pin-drv = <0>;
+	};
+
+	wifi_rst: wifi-rst {
+		samsung,pins = "gpx0-1";
 		samsung,pin-function = <1>;
 		samsung,pin-pud = <0>;
 		samsung,pin-drv = <0>;

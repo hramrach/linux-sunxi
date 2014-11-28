@@ -195,6 +195,10 @@
 		status = "disabled";
 	};
 
+	mmc1_pwrseq: mmc1_pwrseq {
+		compatible = "mmc-pwrseq-simple";
+	};
+
 	mmc_1: mmc@12210000 {
 		compatible = "samsung,exynos5420-dw-mshc-smu";
 		interrupts = <0 76 0>;
