@@ -70,21 +70,25 @@
 		blue {
 			label = "cubietruck:blue:usr";
 			gpios = <&pio 7 21 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "cpu0";
 		};
 
 		orange {
 			label = "cubietruck:orange:usr";
 			gpios = <&pio 7 20 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "nand-disk";
 		};
 
 		white {
 			label = "cubietruck:white:usr";
 			gpios = <&pio 7 11 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "cpu1";
 		};
 
 		green {
 			label = "cubietruck:green:usr";
 			gpios = <&pio 7 7 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "mmc0";
 		};
 	};
 

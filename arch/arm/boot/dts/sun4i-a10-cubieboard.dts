@@ -68,12 +68,13 @@
 		blue {
 			label = "cubieboard:blue:usr";
 			gpios = <&pio 7 21 GPIO_ACTIVE_HIGH>; /* LED1 */
+			linux,default-trigger = "cpu0";
 		};
 
 		green {
 			label = "cubieboard:green:usr";
 			gpios = <&pio 7 20 GPIO_ACTIVE_HIGH>; /* LED2 */
-			linux,default-trigger = "heartbeat";
+			linux,default-trigger = "mmc0";
 		};
 	};
 };
