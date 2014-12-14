@@ -71,7 +71,7 @@
 		blue {
 			label = "cubieboard2:blue:usr";
 			gpios = <&pio 7 21 GPIO_ACTIVE_HIGH>;
-			linux,default-trigger = "heartbeat";
+			linux,default-trigger = "cpu0";
 		};
 
 		green {
