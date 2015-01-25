@@ -127,6 +127,16 @@
 		status = "disabled";
 	};
 
+	reg_usb3_vbus: usb3-vbus {
+		compatible = "regulator-fixed";
+		pinctrl-names = "default";
+		regulator-name = "usb3-vbus";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		enable-active-high;
+		status = "disabled";
+	};
+
 	reg_vcc3v0: vcc3v0 {
 		compatible = "regulator-fixed";
 		regulator-name = "vcc3v0";
