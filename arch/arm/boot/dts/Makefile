@@ -569,6 +569,8 @@ dtb-$(CONFIG_MACH_SUN5I) += \
 	sun5i-a10s-olinuxino-micro.dtb \
 	sun5i-a10s-r7-tv-dongle.dtb \
 	sun5i-a13-hsg-h702.dtb \
+	sun5i-a13-inet-86vs.dtb \
+	sun5i-a13-inet-86vs-sd-uart.dtb \
 	sun5i-a13-olinuxino.dtb \
 	sun5i-a13-olinuxino-micro.dtb \
 	sun5i-a13-utoo-p66.dtb
