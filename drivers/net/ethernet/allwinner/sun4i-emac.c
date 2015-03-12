@@ -29,6 +29,8 @@
 #include <linux/platform_device.h>
 #include <linux/phy.h>
 
+#include <linux/soc/sunxi/sunxi_sram.h>
+
 #include "sun4i-emac.h"
 
 #define DRV_NAME		"sun4i-emac"
@@ -857,11 +859,15 @@ static int emac_probe(struct platform_device *pdev)
 
 	clk_prepare_enable(db->clk);
 
+	ret = sunxi_sram_claim(&pdev->dev);
+	if (ret)
+		dev_warn(&pdev->dev, "Couldn't map SRAM to device\n");
+
 	db->phy_node = of_parse_phandle(np, "phy", 0);
 	if (!db->phy_node) {
 		dev_err(&pdev->dev, "no associated PHY\n");
 		ret = -ENODEV;
-		goto out;
+		goto out_release_sram;
 	}
 
 	/* Read MAC-address from DT */
@@ -893,7 +899,7 @@ static int emac_probe(struct platform_device *pdev)
 	if (ret) {
 		dev_err(&pdev->dev, "Registering netdev failed!\n");
 		ret = -ENODEV;
-		goto out;
+		goto out_release_sram;
 	}
 
 	dev_info(&pdev->dev, "%s: at %p, IRQ %d MAC: %pM\n",
@@ -901,6 +907,8 @@ static int emac_probe(struct platform_device *pdev)
 
 	return 0;
 
+out_release_sram:
+	sunxi_sram_release(&pdev->dev);
 out:
 	dev_err(db->dev, "not found (%d).\n", ret);
 
@@ -914,6 +922,7 @@ static int emac_remove(struct platform_device *pdev)
 	struct net_device *ndev = platform_get_drvdata(pdev);
 
 	unregister_netdev(ndev);
+	sunxi_sram_release(&pdev->dev);
 	free_netdev(ndev);
 
 	dev_dbg(&pdev->dev, "released and freed device\n");
