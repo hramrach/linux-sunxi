@@ -54,6 +54,12 @@
 	model = "Olimex A10s-Olinuxino Micro";
 	compatible = "olimex,a10s-olinuxino-micro", "allwinner,sun5i-a10s";
 
+	chosen {
+		framebuffer@0 {
+			status = "okay";
+		};
+	};
+
 	aliases {
 		serial0 = &uart0;
 		serial1 = &uart2;
