@@ -205,21 +205,6 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&spi2_pins_a>;
 	status = "okay";
-
-	rpi-display@0{
-			compatible = "ilitek,ili9341";
-			reg = <0>;
-			status = "okay";
-			spi-max-frequency = <32000000>;
-			rotate = <270>;
-			bgr;
-			fps = <30>;
-			buswidth = <8>;
-			txbuflen = <64>;
-			reset-gpios = <&pio 2 18 0>; /* PC18 */
-			dc-gpios = <&pio 2 19 0>; /* PC19 */
-			debug = <1>;
-	};
 };
 
 &ohci0 {
@@ -243,20 +228,6 @@
 		allwinner,function = "gpio_in";
 		allwinner,drive = <SUN4I_PINCTRL_10_MA>;
 		allwinner,pull = <SUN4I_PINCTRL_PULL_UP>;
-	};
-
-	disp_dc_pin: disp_dc_pin@0 {
-		allwinner,pins = "PC19";
-		allwinner,function = "gpio_out";
-		allwinner,drive = <SUN4I_PINCTRL_10_MA>;
-		allwinner,pull = <SUN4I_PINCTRL_NO_PULL>;
-	};
-
-	disp_reset_pin: disp_reset_pin@0 {
-		allwinner,pins = "PC18";
-		allwinner,function = "gpio_out";
-		allwinner,drive = <SUN4I_PINCTRL_10_MA>;
-		allwinner,pull = <SUN4I_PINCTRL_NO_PULL>;
 	};
 
 	led_pins_olinuxino: led_pins@0 {
