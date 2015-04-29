@@ -594,6 +594,13 @@
 				allwinner,drive = <0>;
 				allwinner,pull = <0>;
 			};
+
+			spi2_pins_b: spi2@1 {
+				allwinner,pins = "PE00", "PE01", "PE02", "PE03";
+				allwinner,function = "spi2";
+				allwinner,drive = <SUN4I_PINCTRL_10_MA>;
+				allwinner,pull = <SUN4I_PINCTRL_NO_PULL>;
+			};
 		};
 
 		timer@01c20c00 {
