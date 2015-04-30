@@ -26,12 +26,14 @@
 #include <linux/spi/spi.h>
 #include <linux/spi/flash.h>
 #include <linux/mtd/spi-nor.h>
+#include <linux/of_platform.h>
 
 #define	MAX_CMD_SIZE		6
 struct m25p {
 	struct spi_device	*spi;
 	struct spi_nor		spi_nor;
 	struct mtd_info		mtd;
+	size_t max_tx_len;
 	u8			command[MAX_CMD_SIZE];
 };
 
@@ -98,7 +100,10 @@ static ssize_t m25p80_write(struct spi_nor *nor, loff_t to, size_t len,
 	spi_message_add_tail(&t[0], &m);
 
 	t[1].tx_buf = buf;
-	t[1].len = len;
+	if (flash->max_tx_len)
+		t[1].len = min(len, flash->max_tx_len);
+	else
+		t[1].len = len;
 	spi_message_add_tail(&t[1], &m);
 
 	ret = spi_sync(spi, &m);
@@ -152,7 +157,10 @@ static ssize_t m25p80_read(struct spi_nor *nor, loff_t from, size_t len,
 
 	t[1].rx_buf = buf;
 	t[1].rx_nbits = m25p80_rx_nbits(nor);
-	t[1].len = len;
+	if (flash->max_tx_len)
+		t[1].len = min(len, flash->max_tx_len);
+	else
+		t[1].len = len;
 	spi_message_add_tail(&t[1], &m);
 
 	ret = spi_sync(spi, &m);
@@ -242,6 +250,18 @@ static int m25p_probe(struct spi_device *spi)
 		return ret;
 
 	ppdata.of_node = spi->dev.of_node;
+	if (spi->dev.of_node) {
+		int result = of_property_read_u32(spi->dev.of_node,
+						  "linux,max-tx-len",
+						  &flash->max_tx_len);
+
+		if (result)
+			flash->max_tx_len = 0;
+		else
+			dev_info(&spi->dev,
+				 "Using maximum transfer length %u\n",
+				 flash->max_tx_len);
+	}
 
 	return mtd_device_parse_register(&flash->mtd, NULL, &ppdata,
 			data ? data->parts : NULL,

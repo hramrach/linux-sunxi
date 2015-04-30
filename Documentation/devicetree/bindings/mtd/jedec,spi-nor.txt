@@ -19,6 +19,12 @@ Optional properties:
                    all chips and support for it can not be detected at runtime.
                    Refer to your chips' datasheet to check if this is supported
                    by your chip.
+- linux,max-tx-len : With some SPI controller drivers possible transfer size is
+                     limited. This may be hardware or driver bug.
+                     Transfer data in chunks no larger than this value.
+                     Using this option may severely degrade performance and
+                     possibly flash memory life when max-tx-len is smaller than
+                     flash page size (typically 256 bytes)
 
 Example:
 
