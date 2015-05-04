@@ -165,9 +165,14 @@ static int sun6i_spi_transfer_one(struct spi_master *master,
 	unsigned int start, end, tx_time;
 	u32 reg;
 
+	/* This is presumably a noop but actually going through with setting up
+	 * the 0 size transfer locks up A10s SoC requiring hard poweroff.*/
+	if (tfr->len == 0)
+		return 0;
+
 	/* We don't support transfer larger than the FIFO */
 	if (tfr->len > SUN6I_FIFO_DEPTH)
-		return -EINVAL;
+		return -EMSGSIZE;
 
 	reinit_completion(&sspi->done);
 	sspi->tx_buf = tfr->tx_buf;
