@@ -13,6 +13,7 @@
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/of_device.h>
+#include <linux/of_fdt.h>
 #include <linux/string.h>
 #include <linux/ctype.h>
 #include <linux/errno.h>
@@ -549,7 +550,6 @@ int of_overlay_destroy(int id)
 		goto out;
 	}
 
-
 	list_del(&ov->node);
 	__of_changeset_revert(&ov->cset);
 	of_free_overlay_info(ov);
@@ -597,14 +597,123 @@ int of_overlay_destroy_all(void)
 }
 EXPORT_SYMBOL_GPL(of_overlay_destroy_all);
 
+static ssize_t of_overlay_list_show(struct kobject *kobj, struct kobj_attribute
+				    *attr, char *buf)
+{
+	struct of_overlay *ov, *ovn;
+	ssize_t size = 0;
+	int j;
+
+	mutex_lock(&of_mutex);
+
+	list_for_each_entry_safe_reverse(ov, ovn, &ov_list, node) {
+		size += scnprintf(buf + size, PAGE_SIZE - size, "%d", ov->id);
+		for (j = 0; j < ov->count; j++)
+			size += scnprintf(buf + size, PAGE_SIZE - size,
+					  "  %pOfp (%s)",
+					  ov->ovinfo_tab[j].target,
+					  ov->ovinfo_tab[j].target->name);
+		size += scnprintf(buf + size, PAGE_SIZE - size, "\n");
+	}
+
+	mutex_unlock(&of_mutex);
+	return size;
+}
+
+static ssize_t of_overlay_destroy_store(struct kobject *kobj,
+					struct kobj_attribute *attr,
+					const char *buf,
+					size_t count)
+{
+	int ret;
+	int id;
+
+	ret = kstrtoint(buf, 10, &id);
+	if (ret < 0)
+		return ret;
+
+	ret = of_overlay_destroy(id);
+	if (ret < 0)
+		return ret;
+	return count;
+}
+
+static ssize_t of_overlay_destroy_all_store(struct kobject *kobj,
+					    struct kobj_attribute *attr,
+					    const char *buf,
+					    size_t count)
+{
+	int ret = of_overlay_destroy_all();
+
+	if (ret < 0)
+		return ret;
+	return count;
+}
+
+static ssize_t of_overlay_create_store(struct kobject *kobj,
+				       struct kobj_attribute *attr,
+				       const char *_buf,
+				       size_t count)
+{
+	int ret;
+	const unsigned long *buf = (const unsigned long *)_buf;
+	struct device_node *tree;
+
+	of_fdt_unflatten_tree(buf, &tree);
+	of_resolve_phandles(tree);
+	ret = of_overlay_create(tree);
+	if (ret < 0)
+		return ret;
+	return count;
+}
+
+static struct kobj_attribute of_overlay_list_attr =
+__ATTR(list, 0444, of_overlay_list_show, NULL);
+static struct kobj_attribute of_overlay_create_attr =
+__ATTR(create, 0200, NULL, of_overlay_create_store);
+static struct kobj_attribute of_overlay_destroy_attr =
+__ATTR(destroy, 0200, NULL, of_overlay_destroy_store);
+static struct kobj_attribute of_overlay_destroy_all_attr =
+__ATTR(destroy_all, 0200, NULL, of_overlay_destroy_all_store);
+
+static struct attribute *of_overlay_attrs[] = {
+		&of_overlay_list_attr.attr,
+		&of_overlay_create_attr.attr,
+		&of_overlay_destroy_attr.attr,
+		&of_overlay_destroy_all_attr.attr,
+		NULL
+};
+
+struct attribute_group of_overlay_attr_group = {
+		.name = "control",
+		.attrs = of_overlay_attrs,
+};
+
+static struct kobject *of_overlay_kobj;
+
 /* called from of_init() */
 int of_overlay_init(void)
 {
-	int rc;
+	int retval;
 
-	ov_kset = kset_create_and_add("overlays", NULL, &of_kset->kobj);
-	if (!ov_kset)
+	of_overlay_kobj = kobject_create_and_add("of-overlay", kernel_kobj);
+	if (!of_overlay_kobj)
 		return -ENOMEM;
 
+	retval = sysfs_create_group(of_overlay_kobj, &of_overlay_attr_group);
+	if (retval)
+		goto of_init_error;
+
+	ov_kset = kset_create_and_add("overlays", NULL, &of_kset->kobj);
+	if (!ov_kset) {
+		retval = -ENOMEM;
+		goto of_init_error;
+	}
+
 	return 0;
+
+of_init_error:
+	kobject_put(of_overlay_kobj);
+
+	return retval;
 }
