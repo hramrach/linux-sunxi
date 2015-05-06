@@ -84,8 +84,13 @@ static void __of_adjust_tree_phandles(struct device_node *node,
 	phandle phandle;
 
 	/* first adjust the node's phandle direct value */
-	if (node->phandle != 0 && node->phandle != OF_PHANDLE_ILLEGAL)
+	if (node->phandle != 0 && node->phandle != OF_PHANDLE_ILLEGAL) {
+		pr_debug("%s: adjusting %pOfp (%s) +%d\n", __func__,
+			 node, node->name, phandle_delta);
 		node->phandle += phandle_delta;
+	} else
+		pr_debug("%s: %pOfp (%s): invalid phandle %d\n", __func__,
+			 node, node->name, node->phandle);
 
 	/* now adjust phandle & linux,phandle values */
 	for_each_property_of_node(node, prop) {
@@ -123,6 +128,7 @@ static int __of_adjust_phandle_ref(struct device_node *node,
 	int offset, propcurlen;
 	int err = 0;
 
+	pr_debug("%s: %s, %s, %d\n", __func__, node->name, rprop->name, value);
 	/* make a copy */
 	propval = kmalloc(rprop->length, GFP_KERNEL);
 	if (!propval) {
@@ -223,6 +229,8 @@ static int __of_adjust_tree_phandle_references(struct device_node *node,
 	if (node == NULL)
 		return 0;
 
+	pr_debug("%s: %pOfp (%s), %pOfp (%s), %d\n", __func__,
+		 node, node->name, target, target->name, phandle_delta);
 	for_each_property_of_node(node, rprop) {
 
 		/* skip properties added automatically */
@@ -250,6 +258,8 @@ static int __of_adjust_tree_phandle_references(struct device_node *node,
 			return -EINVAL;
 		}
 
+		pr_debug(" adjusting %pOfp (%s), %s, +%d\n",
+			 target, target->name, sprop->name, phandle_delta);
 		for (i = 0; i < count; i++) {
 			off = be32_to_cpu(((__be32 *)rprop->value)[i]);
 			/* make sure the offset doesn't overstep (even wrap) */
@@ -368,6 +378,7 @@ int of_resolve_phandles(struct device_node *resolve)
 
 	/* we do allow for the case where no fixups are needed */
 	if (!resolve_fix) {
+		pr_debug("%s: no fixups\n", __func__);
 		err = 0;	/* no error */
 		goto out;
 	}
