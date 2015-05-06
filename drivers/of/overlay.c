@@ -231,13 +231,22 @@ static struct device_node *find_target_node(struct device_node *info_node)
 static int of_fill_overlay_info(struct of_overlay *ov,
 		struct device_node *info_node, struct of_overlay_info *ovinfo)
 {
+	pr_debug("%s: info for %s|%d (%s)", __func__,
+	       info_node->full_name, info_node->phandle, info_node->name);
+
 	ovinfo->overlay = of_get_child_by_name(info_node, "__overlay__");
 	if (ovinfo->overlay == NULL)
 		goto err_fail;
+	pr_debug(" overlay %s|%d (%s)",
+	       ovinfo->overlay->full_name, ovinfo->overlay->phandle,
+	       ovinfo->overlay->name);
 
 	ovinfo->target = find_target_node(info_node);
 	if (ovinfo->target == NULL)
 		goto err_fail;
+	pr_debug(" target %s|%d (%s)",
+	       ovinfo->target->full_name, ovinfo->target->phandle,
+	       ovinfo->target->name);
 
 	return 0;
 
