@@ -12,6 +12,7 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/of.h>
+#include <linux/of_fdt.h>
 #include <linux/of_device.h>
 #include <linux/of_fdt.h>
 #include <linux/string.h>
@@ -57,6 +58,8 @@ struct of_overlay {
 	struct kobject kobj;
 };
 
+
+static struct kobject *ov_control_kobj;
 /* master enable switch; once set to 0 can't be re-enabled */
 static atomic_t ov_enable = ATOMIC_INIT(1);
 
@@ -374,6 +377,8 @@ static ssize_t enable_store(struct kobject *kobj,
 	if (atomic_read(&ov_enable) == 0)
 		return -EPERM;
 	atomic_set(&ov_enable, (int)new_enable);
+	if(!new_enable)
+		kobject_put(ov_control_kobj);
 	return count;
 }
 
@@ -780,37 +785,28 @@ static struct attribute *of_overlay_attrs[] = {
 };
 
 struct attribute_group of_overlay_attr_group = {
-		.name = "control",
 		.attrs = of_overlay_attrs,
 };
-
-static struct kobject *of_overlay_kobj;
 
 /* called from of_init() */
 int of_overlay_init(void)
 {
 	int retval;
 
-	of_overlay_kobj = kobject_create_and_add("of-overlay", kernel_kobj);
-	if (!of_overlay_kobj)
-		return -ENOMEM;
-
-	retval = sysfs_create_group(of_overlay_kobj, &of_overlay_attr_group);
-	if (retval)
-		goto of_init_error;
-
 	ov_kset = kset_create_and_add("overlays", NULL, &of_kset->kobj);
 	if (!ov_kset) {
-		retval = -ENOMEM;
-		goto of_init_error;
+		return -ENOMEM;
 	}
+
+	ov_control_kobj = kobject_create_and_add("control", &ov_kset->kobj);
+	if (!ov_control_kobj)
+		return -ENOMEM;
+
+	retval = sysfs_create_group(ov_control_kobj, &of_overlay_attr_group);
+	WARN(retval, "%s: error adding control interface\n", __func__);
+
 	retval = sysfs_create_files(&ov_kset->kobj, overlay_global_attrs);
 	WARN(retval, "%s: error adding global attributes\n", __func__);
 
 	return 0;
-
-of_init_error:
-	kobject_put(of_overlay_kobj);
-
-	return retval;
 }
