@@ -7,6 +7,9 @@ Description:
 
 		enable: The master enable switch, by default is 1, and when
 		        set to 0 it cannot be re-enabled for security reasons.
+			The control directory is removed when set to 0.
+		control/create: write an overlay fdt blob here to add an overlay
+		control/destroy: write an overlay id here to remove the overlay
 
 What:		/sys/firmware/devicetree/overlays/<id>
 Date:		March 2015
