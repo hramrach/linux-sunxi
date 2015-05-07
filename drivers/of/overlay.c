@@ -661,8 +661,9 @@ static ssize_t of_overlay_create_store(struct kobject *kobj,
 	int ret;
 	const unsigned long *buf = (const unsigned long *)_buf;
 	struct device_node *tree;
-
-	of_fdt_unflatten_tree(buf, NULL, &tree);
+	
+	if (!of_fdt_unflatten_tree(buf, NULL, &tree))
+		return -EINVAL;
 	of_resolve_phandles(tree);
 	ret = of_overlay_create(tree);
 	if (ret < 0)
