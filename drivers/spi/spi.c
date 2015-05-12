@@ -1712,6 +1712,52 @@ static void acpi_register_spi_devices(struct spi_master *master)
 static inline void acpi_register_spi_devices(struct spi_master *master) {}
 #endif /* CONFIG_ACPI */
 
+#ifdef CONFIG_SPI_SPIDEV
+static void spidev_register_devices(struct spi_master *master)
+{
+	struct spi_device *spi;
+	int i, status;
+
+	for (i = 0; i < master->num_chipselect; i++) {
+		spi = spi_alloc_device(master);
+		if (!spi) {
+			dev_err(&master->dev, "Couldn't allocate spidev device\n");
+			continue;
+		}
+
+		spi->chip_select = i;
+		strlcpy(spi->modalias, "spidev", sizeof(spi->modalias));
+
+		/*
+		 * This is far from perfect since an addition might be
+		 * done between here and the call to spi_add_device,
+		 * but we can't hold the lock and call spi_add_device
+		 * either, as it would trigger a deadlock.
+		 *
+		 * If such a race occurs, spi_add_device will still
+		 * catch it though, as it also checks for devices
+		 * being registered several times on the same chip
+		 * select.
+		*/
+		status = bus_for_each_dev(&spi_bus_type, NULL, spi,
+					  spi_dev_check);
+		if (status) {
+			dev_dbg(&master->dev, "Chipselect already in use.. Skipping.");
+			spi_dev_put(spi);
+			continue;
+		}
+
+		if (spi_add_device(spi)) {
+			dev_err(&master->dev, "Couldn't add spidev device\n");
+			spi_dev_put(spi);
+		}
+	}
+
+}
+#else
+static inline void spidev_register_devices(struct spi_master *master) {}
+#endif /* CONFIG_SPI_SPIDEV */
+
 static void spi_master_release(struct device *dev)
 {
 	struct spi_master *master;
@@ -1907,6 +1953,7 @@ int spi_register_master(struct spi_master *master)
 	/* Register devices from the device tree and ACPI */
 	of_register_spi_devices(master);
 	acpi_register_spi_devices(master);
+	spidev_register_devices(master);
 done:
 	return status;
 }
