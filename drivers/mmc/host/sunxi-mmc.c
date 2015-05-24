@@ -628,6 +628,8 @@ static int sunxi_mmc_oclk_onoff(struct sunxi_mmc_host *host, u32 oclk_en)
 
 	if (oclk_en)
 		rval |= SDXC_CARD_CLOCK_ON;
+	else
+		rval |= SDXC_LOW_POWER_ON;
 
 	start = jiffies;
 	end = start + msecs_to_jiffies(750);
