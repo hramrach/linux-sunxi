@@ -615,7 +615,7 @@ static irqreturn_t sunxi_mmc_handle_manual_stop(int irq, void *dev_id)
 
 static int sunxi_mmc_oclk_onoff(struct sunxi_mmc_host *host, u32 oclk_en)
 {
-	unsigned long expire = jiffies + msecs_to_jiffies(250);
+	unsigned long start, end;
 	u32 rval;
 	int ret;
 
@@ -629,6 +629,8 @@ static int sunxi_mmc_oclk_onoff(struct sunxi_mmc_host *host, u32 oclk_en)
 	if (oclk_en)
 		rval |= SDXC_CARD_CLOCK_ON;
 
+	start = jiffies;
+	end = start + msecs_to_jiffies(5000);
 	mmc_writel(host, REG_CLKCR, rval);
 
 	rval = SDXC_START | SDXC_UPCLK_ONLY | SDXC_WAIT_PRE_OVER;
@@ -636,15 +638,29 @@ static int sunxi_mmc_oclk_onoff(struct sunxi_mmc_host *host, u32 oclk_en)
 
 	do {
 		rval = mmc_readl(host, REG_CMDR);
-	} while (time_before(jiffies, expire) && (rval & SDXC_START));
+	} while (time_before(jiffies, end) && (rval & SDXC_START));
+	end = jiffies;
 
 	/* clear irq status bits set by the command */
 	mmc_writel(host, REG_RINTR,
 		   mmc_readl(host, REG_RINTR) & ~SDXC_SDIO_INTERRUPT);
 
 	if (rval & SDXC_START) {
-		dev_err(mmc_dev(host->mmc), "fatal err update clk timeout\n");
+		dev_err(mmc_dev(host->mmc),
+			"fatal err update oclk timeout. Could not %s in %ims.\n",
+			oclk_en ? "enable" : "disable",
+			jiffies_to_msecs(end - start));
 		return -EIO;
+	} else {
+		int msecs = jiffies_to_msecs(end - start);
+		const char *ing = oclk_en ? "enabling" : "disabling";
+
+		if ((msecs > 150) || (oclk_en && (msecs > 50)))
+			dev_warn(mmc_dev(host->mmc),
+				 "%s oclk took %ims", ing, msecs);
+		else
+			dev_dbg(mmc_dev(host->mmc),
+				 "%s oclk took %ims", ing, msecs);
 	}
 
 	return 0;
