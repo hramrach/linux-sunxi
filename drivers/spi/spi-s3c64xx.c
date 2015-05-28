@@ -133,6 +133,7 @@
 struct s3c64xx_spi_dma_data {
 	struct dma_chan *ch;
 	enum dma_transfer_direction direction;
+	dma_cookie_t cookie;
 };
 
 /**
@@ -306,7 +307,7 @@ static void prepare_dma(struct s3c64xx_spi_dma_data *dma,
 	desc->callback = s3c64xx_spi_dmacb;
 	desc->callback_param = dma;
 
-	dmaengine_submit(desc);
+	dma->cookie = dmaengine_submit(desc);
 	dma_async_issue_pending(dma->ch);
 }
 
@@ -469,15 +470,48 @@ static int wait_for_dma(struct s3c64xx_spi_driver_data *sdd,
 {
 	void __iomem *regs = sdd->regs;
 	unsigned long val;
+	unsigned long start, end;
 	u32 status;
 	int ms;
+	size_t rem_tx = 0;
+	size_t rem_rx = 0;
+	struct dma_tx_state dma_state;
 
 	/* millisecs to xfer 'len' bytes @ 'cur_speed' */
 	ms = xfer->len * 8 * 1000 / sdd->cur_speed;
 	ms += 10; /* some tolerance */
 
+	dev_dbg(&sdd->master->dev,
+		"%s: waiting for %ims transferring %zubytes@%iHz\n",
+		 __func__, ms, xfer->len, sdd->cur_speed);
+
 	val = msecs_to_jiffies(ms) + 10;
+	start = jiffies;
 	val = wait_for_completion_timeout(&sdd->xfer_completion, val);
+	end = jiffies;
+
+	/* Presumably this returns useful results only when the dmaengine sets
+	 * DMA_RESIDUE_GRANULARITY_BURST. pl330 does not set this flag and
+	 * seems to report residue with burst granularity so give up on that
+	 * detection */
+	if (sdd->tx_dma.cookie)
+		if(dmaengine_tx_status(sdd->tx_dma.ch,
+					sdd->tx_dma.cookie, &dma_state)
+				!= DMA_COMPLETE)
+			rem_tx = dma_state.residue;
+	sdd->tx_dma.cookie = 0;
+
+	if (sdd->rx_dma.cookie)
+		if(dmaengine_tx_status(sdd->rx_dma.ch,
+					sdd->rx_dma.cookie, &dma_state)
+				!= DMA_COMPLETE)
+			rem_rx = dma_state.residue;
+	sdd->rx_dma.cookie = 0;
+
+	dev_dbg(&sdd->master->dev, "%s: waited %u ms. DMA residue rx-%zu tx-%zu %ss\n",
+		__func__, jiffies_to_msecs(end - start),
+		rem_rx, rem_tx,
+		dma_residue_granularity_string_from_chan(sdd->tx_dma.ch));
 
 	/*
 	 * If the previous xfer was completed within timeout, then
@@ -575,6 +609,13 @@ static void s3c64xx_spi_config(struct s3c64xx_spi_driver_data *sdd)
 {
 	void __iomem *regs = sdd->regs;
 	u32 val;
+
+	dev_dbg(&sdd->master->dev,
+		"%s: clk_from_cmu %i src_clk %pC mode%s%s bpw %i",
+		 __func__, sdd->port_conf->clk_from_cmu, sdd->src_clk,
+		 (sdd->cur_mode & SPI_CPOL) ? " SPI_CPOL" : "",
+		 (sdd->cur_mode & SPI_CPHA) ? " SPI_CPHA" : "",
+		 sdd->cur_bpw);
 
 	/* Disable Clock */
 	if (sdd->port_conf->clk_from_cmu) {
@@ -678,6 +719,9 @@ static int s3c64xx_spi_transfer_one(struct spi_master *master,
 	unsigned long flags;
 	int use_dma;
 
+	dev_dbg(&master->dev, "%s %s: xfer bpw %i speed %i",
+		 dev_name(&spi->dev), __func__,
+		 xfer->bits_per_word, xfer->speed_hz);
 	reinit_completion(&sdd->xfer_completion);
 
 	/* Only BPW and Speed may change across transfers */
@@ -696,6 +740,9 @@ static int s3c64xx_spi_transfer_one(struct spi_master *master,
 	    (sdd->rx_dma.ch && sdd->tx_dma.ch &&
 	     (xfer->len > ((FIFO_LVL_MASK(sdd) >> 1) + 1))))
 		use_dma = 1;
+	dev_dbg(&master->dev, "%s %s: %susing dma",
+		 dev_name(&spi->dev), __func__,
+		 use_dma ? "" : "not ");
 
 	spin_lock_irqsave(&sdd->lock, flags);
 
