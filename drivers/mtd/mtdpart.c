@@ -774,10 +774,15 @@ int parse_mtd_partitions(struct mtd_info *master, const char *const *types,
 		if (ret > 0) {
 			printk(KERN_NOTICE "%d %s partitions found on MTD device %s\n",
 			       ret, parser->name, master->name);
-			break;
+			return ret;
+		}
+		if (!IS_ENABLED(CONFIG_MTD_PARTITIONED_MASTER) && (ret < 0)) {
+			pr_err("Error parsing %s partitions on %s\n",
+			       parser->name, master->name);
+			return ret;
 		}
 	}
-	return ret;
+	return 0;
 }
 
 int mtd_is_partition(const struct mtd_info *mtd)
