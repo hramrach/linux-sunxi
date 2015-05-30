@@ -480,6 +480,7 @@ static int wait_for_dma(struct s3c64xx_spi_driver_data *sdd,
 	/* millisecs to xfer 'len' bytes @ 'cur_speed' */
 	ms = xfer->len * 8 * 1000 / sdd->cur_speed;
 	ms += 10; /* some tolerance */
+	ms *= 10;
 
 	dev_dbg(&sdd->master->dev,
 		"%s: waiting for %ims transferring %zubytes@%iHz\n",
