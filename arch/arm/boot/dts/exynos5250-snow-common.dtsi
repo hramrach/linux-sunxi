@@ -669,6 +669,21 @@
 	samsung,spi-src-clk = <0>;
 	num-cs = <1>;
 	cs-gpios = <&gpa2 5 GPIO_ACTIVE_HIGH>;
+	flash: m25p80@0 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		/* TODO: this chip is rated 133MHz but
+		   there are pl330 DMA issues at this speed.
+		   At 40MHz reading 64k at a time should work.*/
+		spi-max-frequency = <40000000>;
+		m25p,fast-read;
+		controller-data {
+				/* this needs to be non-zero for higher speed. */
+				samsung,spi-feedback-delay = <0>;
+		};
+	};
 };
 
 &usbdrd_dwc3 {
