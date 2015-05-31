@@ -601,8 +601,13 @@ static int sunxi_mmc_oclk_onoff(struct sunxi_mmc_host *host, u32 oclk_en)
 	rval = mmc_readl(host, REG_CLKCR);
 	rval &= ~(SDXC_CARD_CLOCK_ON | SDXC_LOW_POWER_ON);
 
-	if (oclk_en)
+	if (oclk_en) {
 		rval |= SDXC_CARD_CLOCK_ON;
+		if (!host->mmc->card ||
+		     !(host->mmc->card->quirks & MMC_QUIRK_BROKEN_CLK_GATING))
+
+			rval |= SDXC_LOW_POWER_ON;
+	}
 
 	mmc_writel(host, REG_CLKCR, rval);
 
