@@ -213,7 +213,7 @@ static int sun4i_spi_transfer_one(struct spi_master *master,
 {
 	struct sun4i_spi *sspi = spi_master_get_devdata(master);
 	struct dma_async_tx_descriptor *desc_tx = NULL, *desc_rx = NULL;
-	unsigned int mclk_rate, div, timeout;
+	unsigned int speed, mclk_rate, div, timeout;
 	unsigned int tx_len = 0;
 	int ret = 0;
 	unsigned int start, end, tx_time;
@@ -271,10 +271,15 @@ static int sun4i_spi_transfer_one(struct spi_master *master,
 
 	sun4i_spi_write(sspi, SUN4I_CTL_REG, reg);
 
+	speed = spi->max_speed_hz;
+	if(!speed) {
+		speed = 100000;
+		dev_warn(&spi->dev, "SPI speed not set. Using %uHz.", speed);
+	}
 	/* Ensure that we have a parent clock fast enough */
 	mclk_rate = clk_get_rate(sspi->mclk);
-	if (mclk_rate < (2 * spi->max_speed_hz)) {
-		clk_set_rate(sspi->mclk, 2 * spi->max_speed_hz);
+	if (mclk_rate < (2 * speed)) {
+		clk_set_rate(sspi->mclk, 2 * speed);
 		mclk_rate = clk_get_rate(sspi->mclk);
 	}
 
@@ -292,14 +297,14 @@ static int sun4i_spi_transfer_one(struct spi_master *master,
 	 * First try CDR2, and if we can't reach the expected
 	 * frequency, fall back to CDR1.
 	 */
-	div = mclk_rate / (2 * spi->max_speed_hz);
+	div = mclk_rate / (2 * speed);
 	if (div <= (SUN4I_CLK_CTL_CDR2_MASK + 1)) {
 		if (div > 0)
 			div--;
 
 		reg = SUN4I_CLK_CTL_CDR2(div) | SUN4I_CLK_CTL_DRS;
 	} else {
-		div = ilog2(mclk_rate) - ilog2(spi->max_speed_hz);
+		div = ilog2(mclk_rate) - ilog2(speed);
 		reg = SUN4I_CLK_CTL_CDR1(div);
 	}
 
