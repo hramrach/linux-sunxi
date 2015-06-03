@@ -217,6 +217,7 @@ static int sun4i_spi_transfer_one(struct spi_master *master,
 	unsigned int tx_len = 0;
 	u32 reg, trigger = 0;
 	int ret = 0;
+	unsigned int start, end, tx_time;
 
 	/* This is the maximum SPI burst size supported by the hardware */
 	if (tfr->len > SUN4I_MAX_XFER_SIZE)
@@ -388,11 +389,18 @@ static int sun4i_spi_transfer_one(struct spi_master *master,
 	reg = sun4i_spi_read(sspi, SUN4I_CTL_REG);
 	sun4i_spi_write(sspi, SUN4I_CTL_REG, reg | SUN4I_CTL_XCH);
 
+	tx_time = max_t(int, tfr->len * 8 * 2 / (speed / 1000), 100);
+	start = jiffies;
 	timeout = wait_for_completion_timeout(&sspi->done,
-					      msecs_to_jiffies(1000));
+					      msecs_to_jiffies(tx_time));
+	end = jiffies;
 	if (!timeout) {
-			ret = -ETIMEDOUT;
-			goto out;
+		dev_warn(&master->dev,
+			 "%s: timeout transferring %u bytes@%iHz for %i(%i)ms",
+			 dev_name(&spi->dev), tfr->len, speed,
+			 jiffies_to_msecs(end - start), tx_time);
+		ret = -ETIMEDOUT;
+		goto out;
 	}
 
 	if (sun4i_spi_can_dma(master, spi, tfr) && desc_rx)
