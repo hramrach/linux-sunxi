@@ -389,9 +389,9 @@ MODULE_DEVICE_TABLE(acpi, axp20x_acpi_match);
 
 static const struct regmap_irq_chip axp152_regmap_irq_chip = {
 	.name			= "axp152_irq_chip",
-	.status_base		= AXP152_IRQ1_STATE,
-	.ack_base		= AXP152_IRQ1_STATE,
-	.mask_base		= AXP152_IRQ1_EN,
+	.status_base		= AXP20X_IRQ1_STATE,
+	.ack_base		= AXP20X_IRQ1_STATE,
+	.mask_base		= AXP20X_IRQ1_EN,
 	.mask_invert		= true,
 	.init_ack_masked	= true,
 	.irqs			= axp152_regmap_irqs,
