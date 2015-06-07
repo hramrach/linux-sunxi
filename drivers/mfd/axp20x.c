@@ -590,6 +590,7 @@ static int axp20x_match_device(struct axp20x_dev *axp20x, struct device *dev)
 {
 	const struct acpi_device_id *acpi_id;
 	const struct of_device_id *of_id;
+	unsigned int type = 0;
 
 	if (dev->of_node) {
 		of_id = of_match_device(axp20x_of_match, dev);
@@ -637,8 +638,9 @@ static int axp20x_match_device(struct axp20x_dev *axp20x, struct device *dev)
 		dev_err(dev, "unsupported AXP20X ID %lu\n", axp20x->variant);
 		return -EINVAL;
 	}
-	dev_info(dev, "AXP20x variant %s found\n",
-		axp20x_model_names[axp20x->variant]);
+	regmap_read(axp20x->regmap, AXP20X_IC_TYPE, &type);
+	dev_info(dev, "AXP20x variant %s found (chip id %2x)\n",
+		axp20x_model_names[axp20x->variant], type);
 
 	return 0;
 }
