@@ -1356,6 +1356,10 @@ static int _setup_req(struct pl330_dmac *pl330, unsigned dry_run,
 	u8 *buf = req->mc_cpu;
 	int off = 0;
 
+	if (!dry_run)
+		dev_dbg(thrd->dmac->ddma.dev,
+			"setting up request on thread %i", thrd->id);
+
 	PL330_DBGMC_START(req->mc_bus);
 
 	/* DMAMOV CCR, ccr */
@@ -1583,6 +1587,20 @@ static int pl330_update(struct pl330_dmac *pl330)
 		pl330->dmac_tbd.reset_mngr = true;
 	else
 		pl330->dmac_tbd.reset_mngr = false;
+#ifdef PL330_DEBUG_MCGEN
+	if (val) {
+		val = readl(regs + FTM);
+		dev_info(pl330->ddma.dev,
+			 "Manager thread fault %s%s%s%s%s%s",
+			 (val & (1 << 30)) ? "dbg iface" : "sys mem",
+			 (val & (1 << 16)) ? " fetch error" : "",
+			 (val & (1 << 5)) ? " event sec error" : "",
+			 (val & (1 << 4)) ? " channel sec error" : "",
+			 (val & (1 << 1)) ? " invalid operand" : "",
+			 (val & (1 << 0)) ? " invalid instruction" : ""
+			);
+	}
+#endif
 
 	val = readl(regs + FSC) & ((1 << pl330->pcfg.num_chan) - 1);
 	pl330->dmac_tbd.reset_chan |= val;
@@ -1590,10 +1608,41 @@ static int pl330_update(struct pl330_dmac *pl330)
 		int i = 0;
 		while (i < pl330->pcfg.num_chan) {
 			if (val & (1 << i)) {
+				u32 fault = readl(regs + FTC(i));
+#ifdef PL330_DEBUG_MCGEN
+				dev_info(pl330->ddma.dev,
+					 "DMA thread fault"
+					 "%s%s%s%s%s%s%s%s%s%s%s%s",
+					 (fault & (1 << 31)) ?
+					 " lockup" : "",
+					 (fault & (1 << 30)) ?
+					 " dbg iface" : " sys mem",
+					 (fault & (1 << 18)) ?
+					 " read error" : "",
+					 (fault & (1 << 17)) ?
+					 " write error" : "",
+					 (fault & (1 << 16)) ?
+					 " instr fetch error" : "",
+					 (fault & (1 << 12)) ?
+					 " mfifo over/underflow" : "",
+					 (fault & (1 << 7)) ?
+					 " data sec error" : "",
+					 (fault & (1 << 6)) ?
+					 " periph sec error" : "",
+					 (fault & (1 << 5)) ?
+					 " event sec error" : "",
+					 (fault & (1 << 4)) ?
+					 " channel sec error" : "",
+					 (fault & (1 << 1)) ?
+					 " invalid operand" : "",
+					 (fault & (1 << 0)) ?
+					 " invalid instruction" : ""
+					);
+#endif
 				dev_info(pl330->ddma.dev,
 					"Reset Channel-%d\t CS-%x FTC-%x\n",
 						i, readl(regs + CS(i)),
-						readl(regs + FTC(i)));
+						fault);
 				_stop(&pl330->channels[i]);
 			}
 			i++;
@@ -1624,6 +1673,9 @@ static int pl330_update(struct pl330_dmac *pl330)
 			ret = 1;
 
 			id = pl330->events[ev];
+
+			dev_dbg(pl330->ddma.dev,
+				"event signalled on thread id %i", id);
 
 			thrd = &pl330->channels[id];
 
@@ -2160,6 +2212,68 @@ static int pl330_config(struct dma_chan *chan,
 	return 0;
 }
 
+#ifdef PL330_DEBUG_MCGEN
+static void print_channel_state(struct dma_pl330_chan *pch, const char * reason)
+{
+	void __iomem *regs = pch->dmac->base;
+	u8 tid;
+	u32 cs;
+	u8 st;
+	u8 ev;
+	char * state = "unknown";
+
+	if (pch->thread) {
+		tid = pch->thread->id;
+		cs = readl(regs + CS(tid));
+		if (!(cs & CS_CNS))
+			dev_dbg(pch->dmac->ddma.dev,
+				"%s thread %i which is in secure state\n",
+				reason, tid);
+		else {
+			st = cs & DS_ST_MASK;
+			ev = (cs >> 4) & 0x1f;
+			switch (st) {
+				case  0: state = "stopped";
+					 break;
+				case  1: state = "running";
+					 break;
+				case  2: state = "cache miss";
+					 break;
+				case  3: state = "updating PC";
+					 break;
+				case  4: state = "waiting for event";
+					 break;
+				case  5: state = "at barrier";
+					 break;
+				case  6: state = "queue busy";
+					 break;
+				case  7: state = "waiting for peripherial";
+					 break;
+				case  8: state = "killing";
+					 break;
+				case  9: state = "completing";
+					 break;
+
+				case 15: state = "faulting";
+					 break;
+				case 14: state = "faulting completing";
+					 break;
+			}
+			if ((st == DS_ST_WFE) || (st == DS_ST_WFP))
+				dev_dbg(pch->dmac->ddma.dev,
+					"%s thread %i in state %s %i\n",
+					reason, tid, state, ev);
+			else
+				dev_dbg(pch->dmac->ddma.dev,
+					"%s thread %i in state %s\n",
+					reason, tid, state);
+		}
+	}
+}
+#else
+static void print_channel_state(struct dma_pl330_chan *pch, const char * reason) {}
+#endif /* PL330_DEBUG_MCGEN */
+
 static int pl330_terminate_all(struct dma_chan *chan)
 {
 	struct dma_pl330_chan *pch = to_pchan(chan);
@@ -2169,6 +2283,9 @@ static int pl330_terminate_all(struct dma_chan *chan)
 	LIST_HEAD(list);
 
 	pm_runtime_get_sync(pl330->ddma.dev);
+
+	print_channel_state(pch, "Terminating");
+
 	spin_lock_irqsave(&pch->lock, flags);
 	spin_lock(&pl330->lock);
 	_stop(pch->thread);
