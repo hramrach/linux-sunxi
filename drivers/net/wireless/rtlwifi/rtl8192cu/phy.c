@@ -145,7 +145,7 @@ bool _rtl92cu_phy_config_mac_with_headerfile(struct ieee80211_hw *hw)
 	struct rtl_phy *rtlphy = &(rtlpriv->phy);
 	u32 i;
 	u32 arraylength;
-	u32 *ptrarray;
+	u32 const *ptrarray;
 
 	RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE, "Read Rtl819XMACPHY_Array\n");
 	arraylength =  rtlphy->hwparam_tables[MAC_REG].length ;
@@ -160,8 +160,8 @@ bool _rtl92cu_phy_config_bb_with_headerfile(struct ieee80211_hw *hw,
 					    u8 configtype)
 {
 	int i;
-	u32 *phy_regarray_table;
-	u32 *agctab_array_table;
+	u32 const *phy_regarray_table;
+	u32 const *agctab_array_table;
 	u16 phy_reg_arraylen, agctab_arraylen;
 	struct rtl_priv *rtlpriv = rtl_priv(hw);
 	struct rtl_hal *rtlhal = rtl_hal(rtl_priv(hw));
@@ -209,7 +209,7 @@ bool _rtl92cu_phy_config_bb_with_pgheaderfile(struct ieee80211_hw *hw,
 	struct rtl_priv *rtlpriv = rtl_priv(hw);
 	struct rtl_phy *rtlphy = &(rtlpriv->phy);
 	int i;
-	u32 *phy_regarray_table_pg;
+	u32 const *phy_regarray_table_pg;
 	u16 phy_regarray_pg_len;
 
 	rtlphy->pwrgroup_cnt = 0;
@@ -234,8 +234,8 @@ bool rtl92cu_phy_config_rf_with_headerfile(struct ieee80211_hw *hw,
 					  enum radio_path rfpath)
 {
 	int i;
-	u32 *radioa_array_table;
-	u32 *radiob_array_table;
+	u32 const *radioa_array_table;
+	u32 const *radiob_array_table;
 	u16 radioa_arraylen, radiob_arraylen;
 	struct rtl_priv *rtlpriv = rtl_priv(hw);
 	struct rtl_hal *rtlhal = rtl_hal(rtl_priv(hw));

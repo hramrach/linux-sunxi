@@ -1157,7 +1157,7 @@ struct iqk_matrix_regs {
 
 struct phy_parameters {
 	u16 length;
-	u32 *pdata;
+	u32 const *pdata;
 };
 
 enum hw_param_tab_index {
