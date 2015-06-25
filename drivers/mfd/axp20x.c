@@ -38,13 +38,13 @@ static const char * const axp20x_model_names[] = {
 };
 
 static const struct regmap_range axp152_writeable_ranges[] = {
-	regmap_reg_range(AXP152_LDO3456_DC1234_CTRL, AXP152_IRQ3_STATE),
-	regmap_reg_range(AXP152_DCDC_MODE, AXP152_PWM1_DUTY_CYCLE),
+	regmap_reg_range(AXP152_LDO3456_DC1234_CTRL, AXP20X_IRQ3_STATE),
+	regmap_reg_range(AXP20X_DCDC_MODE, AXP152_PWM1_DUTY_CYCLE),
 };
 
 static const struct regmap_range axp152_volatile_ranges[] = {
-	regmap_reg_range(AXP152_PWR_OP_MODE, AXP152_PWR_OP_MODE),
-	regmap_reg_range(AXP152_IRQ1_EN, AXP152_IRQ3_STATE),
+	regmap_reg_range(AXP20X_PWR_OP_MODE, AXP20X_USB_OTG_STATUS),
+	regmap_reg_range(AXP20X_IRQ1_EN, AXP20X_IRQ3_STATE),
 	regmap_reg_range(AXP152_GPIO_INPUT, AXP152_GPIO_INPUT),
 };
 
@@ -140,7 +140,12 @@ static struct resource axp20x_pek_resources[] = {
 	},
 };
 
-static struct resource axp20x_usb_power_supply_resources[] = {
+static struct resource axp152_aux_power_supply_resources[] = {
+	DEFINE_RES_IRQ_NAMED(AXP152_IRQ_VBUS_PLUGIN, "VBUS_PLUGIN"),
+	DEFINE_RES_IRQ_NAMED(AXP152_IRQ_VBUS_REMOVAL, "VBUS_REMOVAL"),
+};
+
+static struct resource axp20x_aux_power_supply_resources[] = {
 	DEFINE_RES_IRQ_NAMED(AXP20X_IRQ_VBUS_PLUGIN, "VBUS_PLUGIN"),
 	DEFINE_RES_IRQ_NAMED(AXP20X_IRQ_VBUS_REMOVAL, "VBUS_REMOVAL"),
 	DEFINE_RES_IRQ_NAMED(AXP20X_IRQ_VBUS_VALID, "VBUS_VALID"),
@@ -445,10 +450,10 @@ static struct mfd_cell axp20x_cells[] = {
 	}, {
 		.name		= "axp20x-regulator",
 	}, {
-		.name		= "axp20x-usb-power-supply",
-		.of_compatible	= "x-powers,usb-power-supply",
-		.num_resources	= ARRAY_SIZE(axp20x_usb_power_supply_resources),
-		.resources	= axp20x_usb_power_supply_resources,
+		.name		= "axp20x-power-supply",
+		.of_compatible	= "x-powers,aux-power-supply",
+		.num_resources	= ARRAY_SIZE(axp20x_aux_power_supply_resources),
+		.resources	= axp20x_aux_power_supply_resources,
 	},
 };
 
@@ -469,6 +474,11 @@ static struct mfd_cell axp152_cells[] = {
 		.resources		= axp152_pek_resources,
 	}, {
 		.name			= "axp152-regulator",
+	}, {
+		.name		= "axp20x-power-supply",
+		.of_compatible	= "x-powers,aux-power-supply",
+		.num_resources	= ARRAY_SIZE(axp152_aux_power_supply_resources),
+		.resources	= axp152_aux_power_supply_resources,
 	},
 };
 

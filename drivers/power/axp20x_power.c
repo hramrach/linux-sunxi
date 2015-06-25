@@ -22,7 +22,7 @@
 #include <linux/regmap.h>
 #include <linux/slab.h>
 
-#define DRVNAME "axp20x-usb-power-supply"
+#define DRVNAME "axp20x-power-supply"
 
 #define AXP20X_PWR_STATUS_VBUS_PRESENT	BIT(5)
 #define AXP20X_PWR_STATUS_VBUS_USED	BIT(4)
@@ -187,6 +187,7 @@ static int axp20x_usb_power_probe(struct platform_device *pdev)
 
 	power->regmap = axp20x->regmap;
 
+	if (axp20x->
 	/* Enable vbus valid checking */
 	ret = regmap_update_bits(power->regmap, AXP20X_VBUS_MON,
 		    AXP20X_VBUS_MON_VBUS_VALID, AXP20X_VBUS_MON_VBUS_VALID);
