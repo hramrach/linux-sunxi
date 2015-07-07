@@ -237,6 +237,29 @@ struct ti_clk_ll_ops {
 
 #define to_clk_hw_omap(_hw) container_of(_hw, struct clk_hw_omap, hw)
 
+void omap2_init_clk_hw_omap_clocks(struct clk *clk);
+int omap3_noncore_dpll_enable(struct clk_hw *hw);
+void omap3_noncore_dpll_disable(struct clk_hw *hw);
+int omap3_noncore_dpll_set_parent(struct clk_hw *hw, u8 index);
+int omap3_noncore_dpll_set_rate(struct clk_hw *hw, unsigned long rate,
+				unsigned long parent_rate);
+int omap3_noncore_dpll_set_rate_and_parent(struct clk_hw *hw,
+					   unsigned long rate,
+					   unsigned long parent_rate,
+					   u8 index);
+int omap3_noncore_dpll_determine_rate(struct clk_hw *hw,
+				      struct clk_rate_request *req);
+unsigned long omap4_dpll_regm4xen_recalc(struct clk_hw *hw,
+					 unsigned long parent_rate);
+long omap4_dpll_regm4xen_round_rate(struct clk_hw *hw,
+				    unsigned long target_rate,
+				    unsigned long *parent_rate);
+int omap4_dpll_regm4xen_determine_rate(struct clk_hw *hw,
+				       struct clk_rate_request *req);
+u8 omap2_init_dpll_parent(struct clk_hw *hw);
+unsigned long omap3_dpll_recalc(struct clk_hw *hw, unsigned long parent_rate);
+long omap2_dpll_round_rate(struct clk_hw *hw, unsigned long target_rate,
+			   unsigned long *parent_rate);
 void omap2_init_clk_clkdm(struct clk_hw *clk);
 int omap2_clk_disable_autoidle_all(void);
 int omap2_clk_enable_autoidle_all(void);
