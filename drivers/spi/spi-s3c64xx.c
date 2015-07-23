@@ -369,8 +369,12 @@ static bool s3c64xx_spi_can_dma(struct spi_master *master,
 				struct spi_transfer *xfer)
 {
 	struct s3c64xx_spi_driver_data *sdd = spi_master_get_devdata(master);
+	bool always = ((struct s3c64xx_spi_csinfo *)spi_get_ctldata(spi))->always_dma;
 
-	return xfer->len > (FIFO_LVL_MASK(sdd) >> 1) + 1;
+	if (always)
+		return 1;
+	else
+		return xfer->len > (FIFO_LVL_MASK(sdd) >> 1) + 1;
 }
 
 static void enable_datapath(struct s3c64xx_spi_driver_data *sdd,
@@ -738,8 +742,9 @@ static int s3c64xx_spi_transfer_one(struct spi_master *master,
 	/* Polling method for xfers not bigger than FIFO capacity */
 	use_dma = 0;
 	if (!is_polling(sdd) &&
-	    (sdd->rx_dma.ch && sdd->tx_dma.ch &&
-	     (xfer->len > ((FIFO_LVL_MASK(sdd) >> 1) + 1))))
+	    (sdd->rx_dma.ch && sdd->tx_dma.ch  &&
+	     ((xfer->len > ((FIFO_LVL_MASK(sdd) >> 1) + 1))
+	      || ((struct s3c64xx_spi_csinfo *)spi_get_ctldata(spi))->always_dma)))
 		use_dma = 1;
 	dev_dbg(&master->dev, "%s %s: %susing dma",
 		 dev_name(&spi->dev), __func__,
@@ -795,6 +800,7 @@ static struct s3c64xx_spi_csinfo *s3c64xx_get_slave_ctrldata(
 	struct s3c64xx_spi_csinfo *cs;
 	struct device_node *slave_np, *data_np = NULL;
 	u32 fb_delay = 0;
+	u32 always_dma = 0;
 
 	slave_np = spi->dev.of_node;
 	if (!slave_np) {
@@ -816,6 +822,8 @@ static struct s3c64xx_spi_csinfo *s3c64xx_get_slave_ctrldata(
 
 	of_property_read_u32(data_np, "samsung,spi-feedback-delay", &fb_delay);
 	cs->fb_delay = fb_delay;
+	of_property_read_u32(data_np, "samsung,spi-always-dma", &always_dma);
+	cs->always_dma = always_dma;
 	of_node_put(data_np);
 	return cs;
 }

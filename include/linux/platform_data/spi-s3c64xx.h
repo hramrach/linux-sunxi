@@ -26,6 +26,7 @@ struct platform_device;
  */
 struct s3c64xx_spi_csinfo {
 	u8 fb_delay;
+	bool always_dma;
 	unsigned line;
 };
 
