@@ -93,6 +93,7 @@ Example:
 
 			controller-data {
 				samsung,spi-feedback-delay = <0>;
+				samsung,spi-always-dma = <1>;
 			};
 
 			partition@0 {
