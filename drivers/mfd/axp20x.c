@@ -140,9 +140,21 @@ static struct resource axp20x_pek_resources[] = {
 	},
 };
 
+static struct resource axp152_main_power_supply_resources[] = {
+	DEFINE_RES_IRQ_NAMED(AXP152_IRQ_LDO0_PLUGIN, "LDO0_PLUGIN"),
+	DEFINE_RES_IRQ_NAMED(AXP152_IRQ_LDO0_REMOVAL, "LDO0_REMOVAL"),
+};
+
 static struct resource axp152_aux_power_supply_resources[] = {
-	DEFINE_RES_IRQ_NAMED(AXP152_IRQ_VBUS_PLUGIN, "VBUS_PLUGIN"),
-	DEFINE_RES_IRQ_NAMED(AXP152_IRQ_VBUS_REMOVAL, "VBUS_REMOVAL"),
+	DEFINE_RES_IRQ_NAMED(AXP152_IRQ_ALDO0_PLUGIN, "ALDO0_PLUGIN"),
+	DEFINE_RES_IRQ_NAMED(AXP152_IRQ_ALDO0_REMOVAL, "ALDO0_REMOVAL"),
+};
+
+static struct resource axp20x_main_power_supply_resources[] = {
+	DEFINE_RES_IRQ_NAMED(AXP20X_IRQ_ACIN_PLUGIN, "ACIN_PLUGIN"),
+	DEFINE_RES_IRQ_NAMED(AXP20X_IRQ_ACIN_REMOVAL, "ACIN_REMOVAL"),
+	DEFINE_RES_IRQ_NAMED(AXP20X_IRQ_ACIN_VALID, "ACIN_VALID"),
+	DEFINE_RES_IRQ_NAMED(AXP20X_IRQ_ACIN_NOT_VALID, "ACIN_NOT_VALID"),
 };
 
 static struct resource axp20x_aux_power_supply_resources[] = {
@@ -239,9 +251,9 @@ static const struct regmap_config axp288_regmap_config = {
 	[_variant##_IRQ_##_irq] = { .reg_offset = (_off), .mask = BIT(_mask) }
 
 static const struct regmap_irq axp152_regmap_irqs[] = {
-	INIT_REGMAP_IRQ(AXP152, LDO0IN_CONNECT,		0, 6),
+	INIT_REGMAP_IRQ(AXP152, LDO0IN_PLUGIN,		0, 6),
 	INIT_REGMAP_IRQ(AXP152, LDO0IN_REMOVAL,		0, 5),
-	INIT_REGMAP_IRQ(AXP152, ALDO0IN_CONNECT,	0, 3),
+	INIT_REGMAP_IRQ(AXP152, ALDO0IN_PLUGIN,		0, 3),
 	INIT_REGMAP_IRQ(AXP152, ALDO0IN_REMOVAL,	0, 2),
 	INIT_REGMAP_IRQ(AXP152, DCDC1_V_LOW,		1, 5),
 	INIT_REGMAP_IRQ(AXP152, DCDC2_V_LOW,		1, 4),
