@@ -1,3 +1,92 @@
+SPI testing branch.
+
+overlay *example*:
+
+SPI NOR flash
+
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "google,snow";
+
+    /* identification */
+    part-number = "Snow-SPI1";
+
+	fragment@0 {
+		target = <&spi_1>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			flash: m25p80@0 {
+				#address-cells = <1>;
+				#size-cells = <1>;
+				compatible = "jedec,spi-nor";
+				reg = <0>;
+				spi-max-frequency = <40000000>;
+				linux,max-tx-len = <65536>;
+				m25p,fast-read;
+				controller-data {
+					samsung,spi-feedback-delay = <0>;
+					samsung,spi-always-dma = <0>;
+				};
+			};
+		};
+	};
+};
+
+*spidev* (loading spidev is not supported - dmesg spam is generated)
+
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "google,snow";
+
+    /* identification */
+    part-number = "Snow-SPI1";
+
+	fragment@0 {
+		target = <&spi_1>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			flash: m25p80@0 {
+				#address-cells = <1>;
+				#size-cells = <1>;
+				compatible = "spidev";
+				reg = <0>;
+				spi-max-frequency = <80000000>;
+				m25p,fast-read;
+				controller-data {
+					samsung,spi-feedback-delay = <2>;
+				};
+			};
+		};
+	};
+};
+
+To *compile* an overlay:
+
+/path/to/kernel/build/directory/scripts/dtc/dtc -O dtb -o "$(dirname "$overlay_dts")/$(basename "$overlay_dts" .dts)".dtbo -@ "$1"
+
+To *load* an overlay:
+
+#!/bin/sh
+
+[ -e /debug/dynamic_debug ] || mount -t debugfs debugfs /debug
+
+for i in pl330 mtdpart mtdcore fdt overlay resolver ; do echo "file $i.c +p" > /debug/dynamic_debug/control ; done
+
+cat "$overlay_dtbo" > /sys/firmware/devicetree/overlays/control/create
+
+To *unload* an overlay:
+
+echo 0 > /sys/firmware/devicetree/overlays/control/destroy
+
+
         Linux kernel release 4.x <http://kernel.org/>
 
 These are the release notes for Linux version 4.  Read them carefully,
