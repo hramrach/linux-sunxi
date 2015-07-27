@@ -1,4 +1,8 @@
-SPI testing branch.
+A lot of crypto, clk and pinctrl patches got merged into the sunxi testing
+branch. This has now over 700 patches on top of master. Hope this list
+shortens as the updates get pulled upsteram.
+
+SPI testing:
 
 overlay *example*:
 
