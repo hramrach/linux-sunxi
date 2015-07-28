@@ -735,9 +735,8 @@ static int s3c64xx_spi_transfer_one(struct spi_master *master,
 			    && (sdd->state & RXBUSY))
 				dmaengine_terminate_all(sdd->rx_dma.ch);
 		}
-	} else {
-		flush_fifo(sdd);
 	}
+	flush_fifo(sdd);
 
 	return status;
 }
