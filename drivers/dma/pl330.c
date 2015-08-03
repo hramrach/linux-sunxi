@@ -70,6 +70,7 @@ enum pl330_byteswap {
 #define DS_ST_CMPLT		0x9
 #define DS_ST_FLTCMP		0xe
 #define DS_ST_FAULT		0xf
+#define DS_ST_MASK		0xf
 
 #define DPC			0x4
 #define INTEN			0x20
@@ -961,9 +962,9 @@ static inline u32 _state(struct pl330_thread *thrd)
 	u32 val;
 
 	if (is_manager(thrd))
-		val = readl(regs + DS) & 0xf;
+		val = readl(regs + DS) & DS_ST_MASK;
 	else
-		val = readl(regs + CS(thrd->id)) & 0xf;
+		val = readl(regs + CS(thrd->id)) & DS_ST_MASK;
 
 	switch (val) {
 	case DS_ST_STOP:
