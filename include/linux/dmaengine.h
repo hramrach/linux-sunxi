@@ -1107,6 +1107,28 @@ static inline size_t dmaengine_get_src_icg(struct dma_interleaved_template *xt,
 				 chunk->icg, chunk->src_icg);
 }
 
+static inline const char * dma_residue_granularity_string_from_dev(struct dma_device const *dev)
+{
+	const char * granularity = "unknown";
+	switch (dev->residue_granularity) {
+		case DMA_RESIDUE_GRANULARITY_DESCRIPTOR:
+			granularity = "descriptor";
+			break;
+		case DMA_RESIDUE_GRANULARITY_SEGMENT:
+			granularity = "segment";
+			break;
+		case DMA_RESIDUE_GRANULARITY_BURST:
+			granularity = "burst";
+			break;
+	}
+	return granularity;
+}
+
+static inline const char * dma_residue_granularity_string_from_chan(struct dma_chan const *chan)
+{
+	return dma_residue_granularity_string_from_dev(chan->device);
+}
+
 /* --- public DMA engine API --- */
 
 #ifdef CONFIG_DMA_ENGINE
