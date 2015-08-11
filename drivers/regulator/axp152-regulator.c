@@ -147,7 +147,7 @@ static const struct regulator_desc axp20x_regulators[] = {
 		    0x7f, AXP20X_PWR_OUT_CTRL, 0x40),
 	AXP20X_DESC_TABLE(LDO4, "ldo4", "ldo24in", axp20x_ldo4_data,
 			  AXP20X_LDO24_V_OUT, 0x0f, AXP20X_PWR_OUT_CTRL, 0x08),
-	AXP20X_DESC_IO(LDO5, "ldo5", "ldo5", 1800, 3300, 100,
+	AXP20X_DESC_IO(LDOIO0, "ldoio0", "ldoio0", 1800, 3300, 100,
 		       AXP20X_LDO5_V_OUT, 0xf0, AXP20X_GPIO0_CTRL, 0x07,
 		       AXP20X_IO_ENABLED, AXP20X_IO_DISABLED),
 };
