@@ -389,28 +389,6 @@ enum dma_residue_granularity {
 	DMA_RESIDUE_GRANULARITY_BURST = 2,
 };
 
-static inline const char * dma_residue_granularity_string_from_chan(struct dma_chan const *chan)
-{
-	return dma_residue_granularity_string_from_dev(chan->device);
-}
-
-static inline const char * dma_residue_granularity_string_from_dev(struct dma_device const *dev)
-{
-	const char * granularity = "unknown";
-	switch (dev->residue_granularity) {
-		case DMA_RESIDUE_GRANULARITY_DESCRIPTOR:
-			granularity = "descriptor";
-			break;
-		case DMA_RESIDUE_GRANULARITY_SEGMENT:
-			granularity = "segment";
-			break;
-		case DMA_RESIDUE_GRANULARITY_BURST:
-			granularity = "burst";
-			break;
-	}
-	return granularity;
-}
-
 /* struct dma_slave_caps - expose capabilities of a slave channel only
  *
  * @src_addr_widths: bit mask of src addr widths the channel supports
