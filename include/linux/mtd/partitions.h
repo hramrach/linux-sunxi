@@ -51,6 +51,7 @@ struct mtd_partition {
 
 struct mtd_info;
 struct device_node;
+struct of_device_id;
 
 /**
  * struct mtd_part_parser_data - used to pass data to MTD partition parsers.
@@ -69,6 +70,7 @@ struct mtd_part_parser {
 	struct list_head list;
 	struct module *owner;
 	const char *name;
+	const struct of_device_id *of_match_table;
 	int (*parse_fn)(struct mtd_info *, const struct mtd_partition **,
 			struct mtd_part_parser_data *);
 	void (*cleanup)(const struct mtd_partition *pparts, int nr_parts);

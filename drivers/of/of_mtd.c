@@ -9,6 +9,7 @@
 #include <linux/kernel.h>
 #include <linux/of_mtd.h>
 #include <linux/mtd/nand.h>
+#include <linux/mtd/partitions.h>
 #include <linux/export.h>
 
 /**
@@ -117,3 +118,35 @@ bool of_get_nand_on_flash_bbt(struct device_node *np)
 	return of_property_read_bool(np, "nand-on-flash-bbt");
 }
 EXPORT_SYMBOL_GPL(of_get_nand_on_flash_bbt);
+
+static const struct of_device_id *of_match_mtd_parser(
+		struct mtd_part_parser *parser, struct device_node *np)
+{
+	if (!parser || !np)
+		return NULL;
+
+	return of_match_node(parser->of_match_table, np);
+}
+
+static struct device_node *mtd_get_partitions_of_node(struct mtd_info *master)
+{
+	struct device_node *np = mtd_get_of_node(master);
+
+	if (!np)
+		return NULL;
+
+	return of_get_child_by_name(np, "partitions");
+}
+
+bool of_mtd_match_mtd_parser(struct mtd_info *mtd,
+			     struct mtd_part_parser *parser)
+{
+	struct device_node *np = mtd_get_partitions_of_node(mtd);
+	bool ret;
+
+	ret = of_match_mtd_parser(parser, np) != NULL;
+	of_node_put(np);
+
+	return ret;
+}
+EXPORT_SYMBOL_GPL(of_mtd_match_mtd_parser);
