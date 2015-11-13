@@ -687,21 +687,45 @@ int add_mtd_partitions(struct mtd_info *master,
 static DEFINE_SPINLOCK(part_parser_lock);
 static LIST_HEAD(part_parsers);
 
-static struct mtd_part_parser *mtd_part_parser_get(const char *name)
+static bool mtd_part_parser_match_name(struct mtd_part_parser *p,
+				       const char *name)
+{
+	return !strcmp(p->name, name);
+}
+
+static struct mtd_part_parser *__mtd_part_parser_get_by_name(const char *name)
 {
 	struct mtd_part_parser *p, *ret = NULL;
 
 	spin_lock(&part_parser_lock);
 
-	list_for_each_entry(p, &part_parsers, list)
-		if (!strcmp(p->name, name) && try_module_get(p->owner)) {
+	list_for_each_entry(p, &part_parsers, list) {
+		if (mtd_part_parser_match_name(p, name) &&
+				try_module_get(p->owner)) {
 			ret = p;
 			break;
 		}
+	}
 
 	spin_unlock(&part_parser_lock);
 
 	return ret;
+}
+
+static struct mtd_part_parser *mtd_part_parser_get_by_name(const char *name)
+{
+	struct mtd_part_parser *p;
+
+	/* Get parser, if already loaded */
+	p = __mtd_part_parser_get_by_name(name);
+	if (p)
+		return p;
+
+	if (request_module("%s", name))
+		return NULL;
+
+	/* Try again */
+	return __mtd_part_parser_get_by_name(name);
 }
 
 static inline void mtd_part_parser_put(const struct mtd_part_parser *p)
@@ -752,6 +776,27 @@ static const char * const default_mtd_part_types[] = {
 	NULL
 };
 
+static int mtd_part_do_parse(struct mtd_part_parser *parser,
+			     struct mtd_info *master,
+			     struct mtd_partitions *pparts,
+			     struct mtd_part_parser_data *data)
+{
+	int ret;
+
+	ret = (*parser->parse_fn)(master, &pparts->parts, data);
+	pr_debug("%s: parser %s: %i\n", master->name, parser->name, ret);
+	if (ret <= 0)
+		return ret;
+
+	pr_notice("%d %s partitions found on MTD device %s\n",
+		  ret, parser->name, master->name);
+
+	pparts->nr_parts = ret;
+	pparts->parser = parser;
+
+	return ret;
+}
+
 /**
  * parse_mtd_partitions - parse MTD partitions
  * @master: the master partition (describes whole MTD device)
@@ -785,23 +830,15 @@ int parse_mtd_partitions(struct mtd_info *master, const char *const *types,
 
 	for ( ; *types; types++) {
 		pr_debug("%s: parsing partitions %s\n", master->name, *types);
-		parser = mtd_part_parser_get(*types);
-		if (!parser && !request_module("%s", *types))
-			parser = mtd_part_parser_get(*types);
+		parser = mtd_part_parser_get_by_name(*types);
 		pr_debug("%s: got parser %s\n", master->name,
 			 parser ? parser->name : NULL);
 		if (!parser)
 			continue;
-		ret = (*parser->parse_fn)(master, &pparts->parts, data);
-		pr_debug("%s: parser %s: %i\n",
-			 master->name, parser->name, ret);
-		if (ret > 0) {
-			printk(KERN_NOTICE "%d %s partitions found on MTD device %s\n",
-			       ret, parser->name, master->name);
-			pparts->nr_parts = ret;
-			pparts->parser = parser;
+		ret = mtd_part_do_parse(parser, master, pparts, data);
+		/* Found partitions! */
+		if (ret > 0)
 			return 0;
-		}
 		mtd_part_parser_put(parser);
 		/*
 		 * Stash the first error we see; only report it if no parser
