@@ -29,6 +29,7 @@
 #include <linux/kmod.h>
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/partitions.h>
+#include <linux/of_mtd.h>
 #include <linux/err.h>
 #include <linux/kconfig.h>
 
@@ -728,6 +729,25 @@ static struct mtd_part_parser *mtd_part_parser_get_by_name(const char *name)
 	return __mtd_part_parser_get_by_name(name);
 }
 
+static struct mtd_part_parser *mtd_part_parser_get_by_of(struct mtd_info *mtd)
+{
+	struct mtd_part_parser *p, *ret = NULL;
+
+	spin_lock(&part_parser_lock);
+
+	list_for_each_entry(p, &part_parsers, list) {
+		if (of_mtd_match_mtd_parser(mtd, p) &&
+				try_module_get(p->owner)) {
+			ret = p;
+			break;
+		}
+	}
+
+	spin_unlock(&part_parser_lock);
+
+	return ret;
+}
+
 static inline void mtd_part_parser_put(const struct mtd_part_parser *p)
 {
 	module_put(p->owner);
@@ -847,6 +867,18 @@ int parse_mtd_partitions(struct mtd_info *master, const char *const *types,
 		if (ret < 0 && !err)
 			err = ret;
 	}
+
+	parser = mtd_part_parser_get_by_of(master);
+	if (!parser)
+		return err;
+
+	ret = mtd_part_do_parse(parser, master, pparts, data);
+	if (ret > 0)
+		return 0;
+	mtd_part_parser_put(parser);
+	if (ret < 0 && !err)
+		err = ret;
+
 	return err;
 }
 
