@@ -1,29 +1,56 @@
-Representing flash partitions in devicetree
+Flash partitions in device tree
+===============================
 
-Partitions can be represented by sub-nodes of an mtd device. This can be used
+Flash devices can be partitioned into one or more functional ranges (e.g.,
+"boot code", "nvram", and "kernel") in at least two distinct ways:
+
+ (A) a fixed flash layout at production time or
+ (B) with an on-flash partition table, such as RedBoot, that describes the
+     geometry and naming/purpose of each functional region
+
+The former typically requires an operating system to learn about the
+partitioning from some kind of metadata provided by the bootloader/firmware.
+Such partitions can be described using the method in "Section A: Fixed Partitions".
+
+The latter is somewhat analogous to partition tables used on block devices
+(e.g., MBR or GPT), except that there is less standardization for flash
+devices, and it is not always safe or efficient to attempt to search for all of
+them on every flash device in the system, particularly since many of them allow
+their data structures to be placed anywhere on the flash, and so require
+scanning the entire flash device to find them.
+
+To assist system software in locating these partition tables, we provide a
+binding to describe which partition format(s) may be used on a given flash,
+found below in "Section B: On-Flash Partition Tables".
+
+
+Section A: Fixed Partitions
+---------------------------
+
+Partitions can be represented by sub-nodes of a flash device. This can be used
 on platforms which have strong conventions about which portions of a flash are
 used for what purposes, but which don't use an on-flash partition table such
 as RedBoot.
 
-The partition table should be a subnode of the mtd node and should be named
+The partition table should be a subnode of the flash node and should be named
 'partitions'. This node should have the following property:
 - compatible : (required) must be "partitions"
 Partitions are then defined in subnodes of the partitions node.
 
-For backwards compatibility partitions as direct subnodes of the mtd device are
+For backwards compatibility partitions as direct subnodes of the flash device are
 supported. This use is discouraged.
 NOTE: also for backwards compatibility, direct subnodes that have a compatible
 string are not considered partitions, as they may be used for other bindings.
 
 #address-cells & #size-cells must both be present in the partitions subnode of the
-mtd device. There are two valid values for both:
+flash device. There are two valid values for both:
 <1>: for partitions that require a single 32-bit cell to represent their
      size/address (aka the value is below 4 GiB)
 <2>: for partitions that require two 32-bit cells to represent their
      size/address (aka the value is 4 GiB or greater).
 
 Required properties:
-- reg : The partition's offset and size within the mtd bank.
+- reg : The partition's offset and size within the flash
 
 Optional properties:
 - label : The label / name for this partition.  If omitted, the label is taken
@@ -87,5 +114,41 @@ flash@2 {
 			label = "filesystem #2";
 			reg = <0x2 0x00000000 0x1 0x00000000>;
 		};
+	};
+};
+
+
+Section B: On-Flash Partition Tables
+------------------------------------
+
+System designers use a variety of on-flash data structures to describe the
+layout of the flash. Because it's not always optimal for system software to
+scan for every sort of data structure that might be used, one can specify which
+structure(s) might be used on a given flash using the 'partitions' subnode of
+the flash node.
+
+Node name: partitions
+Properties:
+ - compatible: (required) used to define which partition format(s) may be in
+   use on this flash may contain one or more of the strings defined in the
+   following subsections
+
+
+Google's FMAP (Flash MAP)
+#########################
+
+Often used to describe the boot flash on Chrome OS devices. Specified here:
+
+  https://github.com/dhendrix/flashmap/blob/wiki/FmapSpec.md
+
+Properties:
+- compatible: (required) must include "google,fmap"
+
+
+Examples:
+
+flash@0 {
+	partitions {
+		compatible = "google,fmap";
 	};
 };
