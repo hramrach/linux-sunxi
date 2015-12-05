@@ -129,3 +129,10 @@ config MTD_BCM47XX_PARTS
 	help
 	  This provides partitions parser for devices based on BCM47xx
 	  boards.
+
+config MTD_GOOGLE_FMAP_PARTS
+	tristate "Google's Flash Map (FMAP) partition support"
+	help
+	  This provides partition parsing for Google's flash map layout, used
+	  primarily on the boot flash of Chrome OS hardware (e.g., Chromebooks
+	  and Chromeboxes).
