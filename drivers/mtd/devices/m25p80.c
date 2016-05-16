@@ -96,7 +96,7 @@ static ssize_t m25p80_write(struct spi_nor *nor, loff_t to, size_t len,
 	spi_message_add_tail(&t[0], &m);
 
 	t[1].tx_buf = buf;
-	t[1].len = len;
+	t[1].len = min(len, spi_max_transfer_size(spi) - cmd_sz);
 	spi_message_add_tail(&t[1], &m);
 
 	ret = spi_sync(spi, &m);
