@@ -1346,6 +1346,15 @@ int fbtft_probe_common(struct fbtft_display *display,
 			return PTR_ERR(pdata);
 	}
 
+	if (sdev && (spi_max_transfer_size(sdev) < SIZE_MAX))
+		if ((pdata->txbuflen <= 0) || (pdata->txbuflen > spi_max_transfer_size(sdev))) {
+			dev_warn(dev,
+				 "Limiting used buffer size %i -> %i due to device %s transfer size limitation",
+				 pdata->txbuflen, spi_max_transfer_size(sdev),
+				 dev_name(&sdev->dev));
+			pdata->txbuflen = spi_max_transfer_size(sdev);
+	}
+
 	info = fbtft_framebuffer_alloc(display, dev, pdata);
 	if (!info)
 		return -ENOMEM;
