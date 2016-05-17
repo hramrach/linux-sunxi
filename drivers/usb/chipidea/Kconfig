@@ -19,7 +19,8 @@ config USB_CHIPIDEA_OF
 config USB_CHIPIDEA_PCI
 	tristate
 	depends on PCI
-	depends on NOP_USB_XCEIV
+	select NOP_USB_XCEIV
+	select USB_PHY
 	default USB_CHIPIDEA
 
 config USB_CHIPIDEA_UDC

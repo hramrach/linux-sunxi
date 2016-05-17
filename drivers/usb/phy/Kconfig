@@ -57,6 +57,8 @@ config NOP_USB_XCEIV
 	  built-in with usb ip or which are autonomous and doesn't require any
 	  phy programming such as ISP1x04 etc.
 
+	  Should be automatically selected by the relevant driver.
+
 config AM335X_CONTROL_USB
 	tristate
 
