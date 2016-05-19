@@ -295,6 +295,10 @@ static int spi_match_device(struct device *dev, struct device_driver *drv)
 	const struct spi_device	*spi = to_spi_device(dev);
 	const struct spi_driver	*sdrv = to_spi_driver(drv);
 
+	/* spidev can bind to anything */
+	if (strcmp(drv->name, "spidev") == 0)
+		return true;
+
 	/* Attempt an OF style match */
 	if (of_driver_match_device(dev, drv))
 		return 1;
@@ -1477,9 +1481,8 @@ of_register_spi_device(struct spi_master *master, struct device_node *nc)
 	rc = of_modalias_node(nc, spi->modalias,
 				sizeof(spi->modalias));
 	if (rc < 0) {
-		dev_err(&master->dev, "cannot find modalias for %s\n",
+		dev_warn(&master->dev, "cannot find modalias for %s\n",
 			nc->full_name);
-		goto err_out;
 	}
 
 	/* Device address */
@@ -1543,9 +1546,8 @@ of_register_spi_device(struct spi_master *master, struct device_node *nc)
 	/* Device speed */
 	rc = of_property_read_u32(nc, "spi-max-frequency", &value);
 	if (rc) {
-		dev_err(&master->dev, "%s has no valid 'spi-max-frequency' property (%d)\n",
+		dev_warn(&master->dev, "%s has no valid 'spi-max-frequency' property (%d)\n",
 			nc->full_name, rc);
-		goto err_out;
 	}
 	spi->max_speed_hz = value;
 
