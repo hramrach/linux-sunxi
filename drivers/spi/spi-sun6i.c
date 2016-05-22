@@ -223,9 +223,14 @@ static int sun6i_spi_transfer_one(struct spi_master *master,
 
 	/* Ensure that we have a parent clock fast enough */
 	mclk_rate = clk_get_rate(sspi->mclk);
+	dev_dbg(&spi->dev, "mclk %pC (%pCrHz)", sspi->mclk, sspi->mclk);
 	if (mclk_rate < (2 * tfr->speed_hz)) {
-		clk_set_rate(sspi->mclk, 2 * tfr->speed_hz);
+		unsigned long rate = 2 * tfr->speed_hz;
+		dev_dbg(&spi->dev, "mclk %pC setting rate %luHz", sspi->mclk,
+			  rate);
+		clk_set_rate(sspi->mclk, rate);
 		mclk_rate = clk_get_rate(sspi->mclk);
+		dev_dbg(&spi->dev, "mclk %pC (%pCrHz)", sspi->mclk, sspi->mclk);
 	}
 
 	/*
@@ -248,9 +253,13 @@ static int sun6i_spi_transfer_one(struct spi_master *master,
 			div--;
 
 		reg = SUN6I_CLK_CTL_CDR2(div) | SUN6I_CLK_CTL_DRS;
+		dev_dbg(&spi->dev, "clkdiv %u CDR2 %u regval %u",
+			div, SUN6I_CLK_CTL_CDR2(div), reg);
 	} else {
 		div = ilog2(mclk_rate) - ilog2(tfr->speed_hz);
 		reg = SUN6I_CLK_CTL_CDR1(div);
+		dev_dbg(&spi->dev, "clkdiv %u CDR1 %u regval %u",
+			div, SUN6I_CLK_CTL_CDR1(div), reg);
 	}
 
 	sun6i_spi_write(sspi, SUN6I_CLK_CTL_REG, reg);
