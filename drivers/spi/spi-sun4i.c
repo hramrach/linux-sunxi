@@ -32,21 +32,21 @@
 
 #define SUNXI_TXDATA_REG		0x04
 
-#define SUNXI_CTL_REG			0x08
+#define SUNXI_TFR_CTL_REG		0x08
 #define SUNXI_CTL_ENABLE		BIT(0)
 #define SUNXI_CTL_MASTER		BIT(1)
-#define SUNXI_CTL_CPHA			BIT(2)
-#define SUNXI_CTL_CPOL			BIT(3)
-#define SUNXI_CTL_CS_ACTIVE_LOW		BIT(4)
-#define SUNXI_CTL_LMTF			BIT(6)
+#define SUNXI_TFR_CTL_CPHA		BIT(2)
+#define SUNXI_TFR_CTL_CPOL		BIT(3)
+#define SUNXI_TFR_CTL_CS_ACTIVE_LOW	BIT(4)
+#define SUNXI_TFR_CTL_FBS		BIT(6)
 #define SUNXI_CTL_TF_RST		BIT(8)
 #define SUNXI_CTL_RF_RST		BIT(9)
-#define SUNXI_CTL_XCH			BIT(10)
-#define SUNXI_CTL_CS_MASK		0x3000
-#define SUNXI_CTL_CS(cs)		(((cs) << 12) & SUNXI_CTL_CS_MASK)
-#define SUNXI_CTL_DHB			BIT(15)
-#define SUNXI_CTL_CS_MANUAL		BIT(16)
-#define SUNXI_CTL_CS_LEVEL		BIT(17)
+#define SUNXI_TFR_CTL_XCH		BIT(10)
+#define SUNXI_TFR_CTL_CS_MASK		0x3000
+#define SUNXI_TFR_CTL_CS(cs)		(((cs) << 12) & SUNXI_TFR_CTL_CS_MASK)
+#define SUNXI_TFR_CTL_DHB		BIT(15)
+#define SUNXI_TFR_CTL_CS_MANUAL		BIT(16)
+#define SUNXI_TFR_CTL_CS_LEVEL		BIT(17)
 #define SUNXI_CTL_TP			BIT(18)
 
 #define SUNXI_INT_CTL_REG		0x0c
@@ -139,18 +139,18 @@ static void sunxi_spi_set_cs(struct spi_device *spi, bool enable)
 	struct sunxi_spi *sspi = spi_master_get_devdata(spi->master);
 	u32 reg;
 
-	reg = sunxi_spi_read(sspi, SUNXI_CTL_REG);
+	reg = sunxi_spi_read(sspi, SUNXI_TFR_CTL_REG);
 
-	reg &= ~SUNXI_CTL_CS_MASK;
-	reg |= SUNXI_CTL_CS(spi->chip_select);
+	reg &= ~SUNXI_TFR_CTL_CS_MASK;
+	reg |= SUNXI_TFR_CTL_CS(spi->chip_select);
 
 	/* We want to control the chip select manually */
-	reg |= SUNXI_CTL_CS_MANUAL;
+	reg |= SUNXI_TFR_CTL_CS_MANUAL;
 
 	if (enable)
-		reg |= SUNXI_CTL_CS_LEVEL;
+		reg |= SUNXI_TFR_CTL_CS_LEVEL;
 	else
-		reg &= ~SUNXI_CTL_CS_LEVEL;
+		reg &= ~SUNXI_TFR_CTL_CS_LEVEL;
 
 	/*
 	 * Even though this looks irrelevant since we are supposed to
@@ -164,11 +164,11 @@ static void sunxi_spi_set_cs(struct spi_device *spi, bool enable)
 	 * low.
 	 */
 	if (spi->mode & SPI_CS_HIGH)
-		reg &= ~SUNXI_CTL_CS_ACTIVE_LOW;
+		reg &= ~SUNXI_TFR_CTL_CS_ACTIVE_LOW;
 	else
-		reg |= SUNXI_CTL_CS_ACTIVE_LOW;
+		reg |= SUNXI_TFR_CTL_CS_ACTIVE_LOW;
 
-	sunxi_spi_write(sspi, SUNXI_CTL_REG, reg);
+	sunxi_spi_write(sspi, SUNXI_TFR_CTL_REG, reg);
 }
 
 static size_t sunxi_spi_max_transfer_size(struct spi_device *spi)
@@ -204,10 +204,10 @@ static int sunxi_spi_transfer_one(struct spi_master *master,
 	sunxi_spi_write(sspi, SUNXI_INT_STA_REG, ~0);
 
 
-	reg = sunxi_spi_read(sspi, SUNXI_CTL_REG);
+	reg = sunxi_spi_read(sspi, SUNXI_TFR_CTL_REG);
 
 	/* Reset FIFOs */
-	sunxi_spi_write(sspi, SUNXI_CTL_REG,
+	sunxi_spi_write(sspi, SUNXI_TFR_CTL_REG,
 			reg | SUNXI_CTL_RF_RST | SUNXI_CTL_TF_RST);
 
 	/*
@@ -215,19 +215,19 @@ static int sunxi_spi_transfer_one(struct spi_master *master,
 	 * polarities, etc.
 	 */
 	if (spi->mode & SPI_CPOL)
-		reg |= SUNXI_CTL_CPOL;
+		reg |= SUNXI_TFR_CTL_CPOL;
 	else
-		reg &= ~SUNXI_CTL_CPOL;
+		reg &= ~SUNXI_TFR_CTL_CPOL;
 
 	if (spi->mode & SPI_CPHA)
-		reg |= SUNXI_CTL_CPHA;
+		reg |= SUNXI_TFR_CTL_CPHA;
 	else
-		reg &= ~SUNXI_CTL_CPHA;
+		reg &= ~SUNXI_TFR_CTL_CPHA;
 
 	if (spi->mode & SPI_LSB_FIRST)
-		reg |= SUNXI_CTL_LMTF;
+		reg |= SUNXI_TFR_CTL_FBS;
 	else
-		reg &= ~SUNXI_CTL_LMTF;
+		reg &= ~SUNXI_TFR_CTL_FBS;
 
 
 	/*
@@ -235,11 +235,11 @@ static int sunxi_spi_transfer_one(struct spi_master *master,
 	 * FIFO with bogus data
 	 */
 	if (sspi->rx_buf)
-		reg &= ~SUNXI_CTL_DHB;
+		reg &= ~SUNXI_TFR_CTL_DHB;
 	else
-		reg |= SUNXI_CTL_DHB;
+		reg |= SUNXI_TFR_CTL_DHB;
 
-	sunxi_spi_write(sspi, SUNXI_CTL_REG, reg);
+	sunxi_spi_write(sspi, SUNXI_TFR_CTL_REG, reg);
 
 	/* Ensure that we have a parent clock fast enough */
 	mclk_rate = clk_get_rate(sspi->mclk);
@@ -290,8 +290,8 @@ static int sunxi_spi_transfer_one(struct spi_master *master,
 	sunxi_spi_write(sspi, SUNXI_INT_CTL_REG, SUNXI_INT_CTL_TC);
 
 	/* Start the transfer */
-	reg = sunxi_spi_read(sspi, SUNXI_CTL_REG);
-	sunxi_spi_write(sspi, SUNXI_CTL_REG, reg | SUNXI_CTL_XCH);
+	reg = sunxi_spi_read(sspi, SUNXI_TFR_CTL_REG);
+	sunxi_spi_write(sspi, SUNXI_TFR_CTL_REG, reg | SUNXI_TFR_CTL_XCH);
 
 	tx_time = max(tfr->len * 8 * 2 / (tfr->speed_hz / 1000), 100U);
 	start = jiffies;
@@ -348,7 +348,7 @@ static int sunxi_spi_runtime_resume(struct device *dev)
 		goto err;
 	}
 
-	sunxi_spi_write(sspi, SUNXI_CTL_REG,
+	sunxi_spi_write(sspi, SUNXI_TFR_CTL_REG,
 			SUNXI_CTL_ENABLE | SUNXI_CTL_MASTER | SUNXI_CTL_TP);
 
 	return 0;

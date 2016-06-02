@@ -30,15 +30,15 @@
 #define SUNXI_FIFO_DEPTH		68
 
 #define SUNXI_GBL_CTL_REG		0x04
-#define SUNXI_GBL_CTL_BUS_ENABLE	BIT(0)
-#define SUNXI_GBL_CTL_MASTER		BIT(1)
-#define SUNXI_GBL_CTL_TP		BIT(7)
+#define SUNXI_CTL_ENABLE		BIT(0)
+#define SUNXI_CTL_MASTER		BIT(1)
+#define SUNXI_CTL_TP			BIT(7)
 #define SUNXI_GBL_CTL_RST		BIT(31)
 
 #define SUNXI_TFR_CTL_REG		0x08
 #define SUNXI_TFR_CTL_CPHA		BIT(0)
 #define SUNXI_TFR_CTL_CPOL		BIT(1)
-#define SUNXI_TFR_CTL_SPOL		BIT(2)
+#define SUNXI_TFR_CTL_CS_ACTIVE_LOW	BIT(2)
 #define SUNXI_TFR_CTL_CS_MASK		0x30
 #define SUNXI_TFR_CTL_CS(cs)		(((cs) << 4) & SUNXI_TFR_CTL_CS_MASK)
 #define SUNXI_TFR_CTL_CS_MANUAL		BIT(6)
@@ -54,8 +54,8 @@
 #define SUNXI_INT_STA_REG		0x14
 
 #define SUNXI_FIFO_CTL_REG		0x18
-#define SUNXI_FIFO_CTL_RF_RST		BIT(15)
-#define SUNXI_FIFO_CTL_TF_RST		BIT(31)
+#define SUNXI_CTL_RF_RST		BIT(15)
+#define SUNXI_CTL_TF_RST		BIT(31)
 
 #define SUNXI_FIFO_STA_REG		0x1c
 #define SUNXI_FIFO_STA_RF_CNT_MASK	0x7f
@@ -169,9 +169,9 @@ static void sunxi_spi_set_cs(struct spi_device *spi, bool enable)
 	 * low.
 	 */
 	if (spi->mode & SPI_CS_HIGH)
-		reg &= ~SUNXI_TFR_CTL_SPOL;
+		reg &= ~SUNXI_TFR_CTL_CS_ACTIVE_LOW;
 	else
-		reg |= SUNXI_TFR_CTL_SPOL;
+		reg |= SUNXI_TFR_CTL_CS_ACTIVE_LOW;
 
 	sunxi_spi_write(sspi, SUNXI_TFR_CTL_REG, reg);
 }
@@ -210,7 +210,7 @@ static int sunxi_spi_transfer_one(struct spi_master *master,
 
 	/* Reset FIFO */
 	sunxi_spi_write(sspi, SUNXI_FIFO_CTL_REG,
-			SUNXI_FIFO_CTL_RF_RST | SUNXI_FIFO_CTL_TF_RST);
+			SUNXI_CTL_RF_RST | SUNXI_CTL_TF_RST);
 
 	/*
 	 * Setup the transfer control register: Chip Select,
@@ -360,7 +360,7 @@ static int sunxi_spi_runtime_resume(struct device *dev)
 	}
 
 	sunxi_spi_write(sspi, SUNXI_GBL_CTL_REG,
-			SUNXI_GBL_CTL_BUS_ENABLE | SUNXI_GBL_CTL_MASTER | SUNXI_GBL_CTL_TP);
+			SUNXI_CTL_ENABLE | SUNXI_CTL_MASTER | SUNXI_CTL_TP);
 
 	return 0;
 
