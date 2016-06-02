@@ -145,10 +145,29 @@ static void sun6i_spi_set_cs(struct spi_device *spi, bool enable)
 	reg &= ~SUN6I_TFR_CTL_CS_MASK;
 	reg |= SUN6I_TFR_CTL_CS(spi->chip_select);
 
+	/* We want to control the chip select manually */
+	reg |= SUN6I_TFR_CTL_CS_MANUAL;
+
 	if (enable)
 		reg |= SUN6I_TFR_CTL_CS_LEVEL;
 	else
 		reg &= ~SUN6I_TFR_CTL_CS_LEVEL;
+
+	/*
+	 * Even though this looks irrelevant since we are supposed to
+	 * be controlling the chip select manually, this bit also
+	 * controls the levels of the chip select for inactive
+	 * devices.
+	 *
+	 * If we don't set it, the chip select level will go low by
+	 * default when the device is idle, which is not really
+	 * expected in the common case where the chip select is active
+	 * low.
+	 */
+	if (spi->mode & SPI_CS_HIGH)
+		reg &= ~SUN6I_TFR_CTL_SPOL;
+	else
+		reg |= SUN6I_TFR_CTL_SPOL;
 
 	sun6i_spi_write(sspi, SUN6I_TFR_CTL_REG, reg);
 }
@@ -215,9 +234,6 @@ static int sun6i_spi_transfer_one(struct spi_master *master,
 		reg &= ~SUN6I_TFR_CTL_DHB;
 	else
 		reg |= SUN6I_TFR_CTL_DHB;
-
-	/* We want to control the chip select manually */
-	reg |= SUN6I_TFR_CTL_CS_MANUAL;
 
 	sun6i_spi_write(sspi, SUN6I_TFR_CTL_REG, reg);
 
