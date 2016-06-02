@@ -33,7 +33,6 @@
 #define SUNXI_CTL_ENABLE		BIT(0)
 #define SUNXI_CTL_MASTER		BIT(1)
 #define SUNXI_CTL_TP			BIT(7)
-#define SUNXI_GBL_CTL_RST		BIT(31)
 
 #define SUNXI_TFR_CTL_REG		0x08
 #define SUNXI_TFR_CTL_CPHA		BIT(0)
@@ -48,7 +47,6 @@
 #define SUNXI_TFR_CTL_XCH		BIT(31)
 
 #define SUNXI_INT_CTL_REG		0x10
-#define SUNXI_INT_CTL_RF_OVF		BIT(8)
 #define SUNXI_INT_CTL_TC		BIT(12)
 
 #define SUNXI_INT_STA_REG		0x14
@@ -208,7 +206,9 @@ static int sunxi_spi_transfer_one(struct spi_master *master,
 	/* Clear pending interrupts */
 	sunxi_spi_write(sspi, SUNXI_INT_STA_REG, ~0);
 
-	/* Reset FIFO */
+	reg = sunxi_spi_read(sspi, SUNXI_TFR_CTL_REG);
+
+	/* Reset FIFOs */
 	sunxi_spi_write(sspi, SUNXI_FIFO_CTL_REG,
 			SUNXI_CTL_RF_RST | SUNXI_CTL_TF_RST);
 
@@ -216,8 +216,6 @@ static int sunxi_spi_transfer_one(struct spi_master *master,
 	 * Setup the transfer control register: Chip Select,
 	 * polarities, etc.
 	 */
-	reg = sunxi_spi_read(sspi, SUNXI_TFR_CTL_REG);
-
 	if (spi->mode & SPI_CPOL)
 		reg |= SUNXI_TFR_CTL_CPOL;
 	else

@@ -19,6 +19,7 @@
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
+#include <linux/reset.h>
 
 #include <linux/spi/spi.h>
 
@@ -60,7 +61,7 @@
 
 #define SUNXI_CLK_CTL_REG		0x1c
 #define SUNXI_CLK_CTL_CDR2_MASK		0xff
-#define SUNXI_CLK_CTL_CDR2(div)		((div) & SUNXI_CLK_CTL_CDR2_MASK)
+#define SUNXI_CLK_CTL_CDR2(div)		(((div) & SUNXI_CLK_CTL_CDR2_MASK) << 0)
 #define SUNXI_CLK_CTL_CDR1_MASK		0xf
 #define SUNXI_CLK_CTL_CDR1(div)		(((div) & SUNXI_CLK_CTL_CDR1_MASK) << 8)
 #define SUNXI_CLK_CTL_DRS		BIT(12)
@@ -82,6 +83,7 @@ struct sunxi_spi {
 	void __iomem		*base_addr;
 	struct clk		*hclk;
 	struct clk		*mclk;
+	struct reset_control	*rstc;
 
 	struct completion	done;
 
@@ -140,7 +142,6 @@ static void sunxi_spi_set_cs(struct spi_device *spi, bool enable)
 	u32 reg;
 
 	reg = sunxi_spi_read(sspi, SUNXI_TFR_CTL_REG);
-
 	reg &= ~SUNXI_TFR_CTL_CS_MASK;
 	reg |= SUNXI_TFR_CTL_CS(spi->chip_select);
 
@@ -203,7 +204,6 @@ static int sunxi_spi_transfer_one(struct spi_master *master,
 	/* Clear pending interrupts */
 	sunxi_spi_write(sspi, SUNXI_INT_STA_REG, ~0);
 
-
 	reg = sunxi_spi_read(sspi, SUNXI_TFR_CTL_REG);
 
 	/* Reset FIFOs */
@@ -229,7 +229,6 @@ static int sunxi_spi_transfer_one(struct spi_master *master,
 	else
 		reg &= ~SUNXI_TFR_CTL_FBS;
 
-
 	/*
 	 * If it's a TX only transfer, we don't want to fill the RX
 	 * FIFO with bogus data
@@ -253,7 +252,7 @@ static int sunxi_spi_transfer_one(struct spi_master *master,
 	 *
 	 * We have two choices there. Either we can use the clock
 	 * divide rate 1, which is calculated thanks to this formula:
-	 * SPI_CLK = MOD_CLK / (2 ^ (cdr + 1))
+	 * SPI_CLK = MOD_CLK / (2 ^ cdr)
 	 * Or we can use CDR2, which is calculated with the formula:
 	 * SPI_CLK = MOD_CLK / (2 * (cdr + 1))
 	 * Wether we use the former or the latter is set through the
@@ -353,6 +352,8 @@ static int sunxi_spi_runtime_resume(struct device *dev)
 
 	return 0;
 
+err2:
+	clk_disable_unprepare(sspi->mclk);
 err:
 	clk_disable_unprepare(sspi->hclk);
 out:
