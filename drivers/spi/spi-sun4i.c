@@ -25,8 +25,9 @@
 #include <linux/spi/spi.h>
 
 /*
- * The manual says FIFO depth is 64 bytes but transfer of more than 63 bytes
- * never finishes.
+ * On spi2 on A10s transfer times out when transferring more than 63 bytes.
+ * On spi0 on H3 transfer times out when transferring more than 68 bytes.
+ * Theoretically the FIFO size is 64 and 128 bytes but usable size is lower.
  */
 #define SUN4I_FIFO_DEPTH		63
 #define SUN6I_FIFO_DEPTH		68
@@ -87,6 +88,22 @@ static int sun4i_regmap[SUNXI_NUM_REGS] = {
 -1, -1, -1,
 };
 
+static int sun6i_regmap[SUNXI_NUM_REGS] = {
+/* SUNXI_RXDATA_REG */			0x300,
+/* SUNXI_TXDATA_REG */			0x200,
+/* SUNXI_TFR_CTL_REG */			0x08,
+/* SUNXI_INT_CTL_REG */			0x10,
+/* SUNXI_INT_STA_REG */			0x14,
+/* SUNXI_WAIT_REG */			0x20,
+/* SUNXI_CLK_CTL_REG */			0x24,
+/* SUNXI_BURST_CNT_REG */		0x30,
+/* SUNXI_XMIT_CNT_REG */		0x34,
+/* SUNXI_FIFO_STA_REG */		0x1c,
+/* SUNXI_GBL_CTL_REG */			0x04,
+/* SUNXI_FIFO_CTL_REG */		0x18,
+/* SUNXI_BURST_CTL_CNT_REG */		0x38,
+};
+
 enum SUNXI_BITMAP_ENUM {
 	SUNXI_CTL_ENABLE,
 	SUNXI_CTL_MASTER,
@@ -124,6 +141,25 @@ static u32 sun4i_bitmap[SUNXI_BITMAP_SIZE] = {
 /* SUNXI_TFR_CTL_CS_LEVEL */		BIT(17),
 /* SUNXI_CTL_TP */			BIT(18),
 /* SUNXI_INT_CTL_TC */			BIT(16),
+};
+
+static u32 sun6i_bitmap[SUNXI_BITMAP_SIZE] = {
+/* SUNXI_CTL_ENABLE */			BIT(0),
+/* SUNXI_CTL_MASTER */			BIT(1),
+/* SUNXI_TFR_CTL_CPHA */		BIT(0),
+/* SUNXI_TFR_CTL_CPOL */		BIT(1),
+/* SUNXI_TFR_CTL_CS_ACTIVE_LOW */	BIT(2),
+/* SUNXI_TFR_CTL_FBS */			BIT(12),
+/* SUNXI_CTL_TF_RST */			BIT(31),
+/* SUNXI_CTL_RF_RST */			BIT(15),
+/* SUNXI_TFR_CTL_XCH */			BIT(31),
+/* SUNXI_TFR_CTL_CS_MASK */		0x30,
+/* SUNXI_TFR_CTL_CS_SHIFT */		4,
+/* SUNXI_TFR_CTL_DHB */			BIT(8),
+/* SUNXI_TFR_CTL_CS_MANUAL */		BIT(6),
+/* SUNXI_TFR_CTL_CS_LEVEL */		BIT(7),
+/* SUNXI_CTL_TP */			BIT(7),
+/* SUNXI_INT_CTL_TC */			BIT(12),
 };
 
 struct sunxi_spi {
@@ -283,9 +319,14 @@ static int sunxi_spi_transfer_one(struct spi_master *master,
 	reg = sunxi_spi_read(sspi, SUNXI_TFR_CTL_REG);
 
 	/* Reset FIFOs */
-	sunxi_spi_write(sspi, SUNXI_TFR_CTL_REG,
-			reg | sspi_bits(sspi, SUNXI_CTL_RF_RST) |
-			sspi_bits(sspi, SUNXI_CTL_TF_RST));
+	if (sspi->type == SPI_SUN4I)
+		sunxi_spi_write(sspi, SUNXI_TFR_CTL_REG,
+				reg | sspi_bits(sspi, SUNXI_CTL_RF_RST) |
+				sspi_bits(sspi, SUNXI_CTL_TF_RST));
+	else
+		sunxi_spi_write(sspi, SUNXI_FIFO_CTL_REG,
+				sspi_bits(sspi, SUNXI_CTL_RF_RST) |
+				sspi_bits(sspi, SUNXI_CTL_TF_RST));
 
 	/*
 	 * Setup the transfer control register: Chip Select,
@@ -358,6 +399,9 @@ static int sunxi_spi_transfer_one(struct spi_master *master,
 	/* Setup the counters */
 	sunxi_spi_write(sspi, SUNXI_BURST_CNT_REG, SUNXI_BURST_CNT(tfr->len));
 	sunxi_spi_write(sspi, SUNXI_XMIT_CNT_REG, SUNXI_XMIT_CNT(tx_len));
+	if (sspi->type == SPI_SUN6I)
+		sunxi_spi_write(sspi, SUNXI_BURST_CTL_CNT_REG,
+				SUNXI_BURST_CTL_CNT_STC(tx_len));
 
 	/* Fill the TX FIFO */
 	sunxi_spi_fill_fifo(sspi, sspi->fifo_depth);
@@ -413,7 +457,7 @@ static int sunxi_spi_runtime_resume(struct device *dev)
 {
 	struct spi_master *master = dev_get_drvdata(dev);
 	struct sunxi_spi *sspi = spi_master_get_devdata(master);
-	int ret;
+	int ret, reg;
 
 	ret = clk_prepare_enable(sspi->hclk);
 	if (ret) {
@@ -427,7 +471,19 @@ static int sunxi_spi_runtime_resume(struct device *dev)
 		goto err;
 	}
 
-	sunxi_spi_write(sspi, SUNXI_TFR_CTL_REG,
+	if (sspi->rstc) {
+		ret = reset_control_deassert(sspi->rstc);
+		if (ret) {
+			dev_err(dev, "Couldn't deassert the device from reset\n");
+			goto err2;
+		}
+	}
+
+	if (sspi->type == SPI_SUN4I)
+		reg = SUNXI_TFR_CTL_REG;
+	else
+		reg = SUNXI_GBL_CTL_REG;
+	sunxi_spi_write(sspi, reg,
 			sspi_bits(sspi, SUNXI_CTL_ENABLE) |
 			sspi_bits(sspi, SUNXI_CTL_MASTER) |
 			sspi_bits(sspi, SUNXI_CTL_TP));
@@ -447,6 +503,8 @@ static int sunxi_spi_runtime_suspend(struct device *dev)
 	struct spi_master *master = dev_get_drvdata(dev);
 	struct sunxi_spi *sspi = spi_master_get_devdata(master);
 
+	if (sspi->rstc)
+		reset_control_assert(sspi->rstc);
 	clk_disable_unprepare(sspi->mclk);
 	clk_disable_unprepare(sspi->hclk);
 
@@ -462,6 +520,7 @@ static int sunxi_spi_probe(struct platform_device *pdev)
 	struct sunxi_spi *sspi;
 	struct resource	*res;
 	int ret = 0, irq;
+	const char *desc = NULL;
 
 	if (!pdev->dev.of_node) {
 		dev_err(&pdev->dev, "No devicetree data.\n");
@@ -505,10 +564,24 @@ static int sunxi_spi_probe(struct platform_device *pdev)
 	}
 
 	sspi->master = master;
-	sspi->fifo_depth = SUN4I_FIFO_DEPTH;
 	sspi->type = (int) id_entry->data;
-	sspi->regmap = &sun4i_regmap;
-	sspi->bitmap = &sun4i_bitmap;
+	switch (sspi->type) {
+	case SPI_SUN4I:
+		sspi->fifo_depth = SUN4I_FIFO_DEPTH;
+		sspi->regmap = &sun4i_regmap;
+		sspi->bitmap = &sun4i_bitmap;
+		break;
+	case SPI_SUN6I:
+		sspi->fifo_depth = SUN6I_FIFO_DEPTH;
+		sspi->regmap = &sun6i_regmap;
+		sspi->bitmap = &sun6i_bitmap;
+		break;
+	default:
+		dev_err(&pdev->dev, "Unknown sunxi spi type %i", sspi->type);
+		ret = -EINVAL;
+		goto err_free_master;
+	}
+
 	master->max_speed_hz = 100 * 1000 * 1000;
 	master->min_speed_hz = 3 * 1000;
 	master->set_cs = sunxi_spi_set_cs;
@@ -536,6 +609,15 @@ static int sunxi_spi_probe(struct platform_device *pdev)
 
 	init_completion(&sspi->done);
 
+	if (sspi->type == SPI_SUN6I) {
+		sspi->rstc = devm_reset_control_get(&pdev->dev, NULL);
+		if (IS_ERR(sspi->rstc)) {
+			dev_err(&pdev->dev, "Couldn't get reset controller\n");
+			ret = PTR_ERR(sspi->rstc);
+			goto err_free_master;
+		}
+	}
+
 	/*
 	 * This wake-up/shutdown pattern is to be able to have the
 	 * device woken up, even if runtime_pm is disabled
@@ -556,6 +638,18 @@ static int sunxi_spi_probe(struct platform_device *pdev)
 		goto err_pm_disable;
 	}
 
+	switch (sspi->type) {
+	case SPI_SUN4I:
+		desc = "sun4i";
+		break;
+	case SPI_SUN6I:
+		desc = "sun6i";
+		break;
+	}
+	dev_notice(&pdev->dev,
+		   "%s SPI controller at 0x%08x, IRQ %i, %i bytes FIFO",
+		   desc, res->start, irq, sspi->fifo_depth);
+
 	return 0;
 
 err_pm_disable:
@@ -575,6 +669,7 @@ static int sunxi_spi_remove(struct platform_device *pdev)
 
 static const struct of_device_id sunxi_spi_match[] = {
 	{ .compatible = "allwinner,sun4i-a10-spi", .data = (void *)SPI_SUN4I },
+	{ .compatible = "allwinner,sun6i-a31-spi", .data = (void *)SPI_SUN6I },
 	{}
 };
 MODULE_DEVICE_TABLE(of, sunxi_spi_match);
@@ -597,5 +692,5 @@ module_platform_driver(sunxi_spi_driver);
 
 MODULE_AUTHOR("Pan Nan <pannan@allwinnertech.com>");
 MODULE_AUTHOR("Maxime Ripard <maxime.ripard@free-electrons.com>");
-MODULE_DESCRIPTION("Allwinner A1X/A20 SPI controller driver");
+MODULE_DESCRIPTION("Allwinner A1X/A2X/A31 SPI controller driver");
 MODULE_LICENSE("GPL");
