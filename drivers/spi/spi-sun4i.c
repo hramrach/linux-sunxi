@@ -354,6 +354,7 @@ static int sunxi_spi_transfer_one(struct spi_master *master,
 {
 	struct sunxi_spi *sspi = spi_master_get_devdata(master);
 	struct dma_async_tx_descriptor *desc_tx = NULL, *desc_rx = NULL;
+	dma_cookie_t tx_cookie, rx_cookie;
 	unsigned int mclk_rate, div, timeout;
 	unsigned int start, end, tx_time;
 	unsigned int tx_len = 0;
@@ -489,7 +490,7 @@ static int sunxi_spi_transfer_one(struct spi_master *master,
 			else
 				trigger |= sspi_bits(sspi, SUNXI_CTL_DMA_TF_HALF);
 
-			dmaengine_submit(desc_tx);
+			tx_cookie = dmaengine_submit(desc_tx);
 			dma_async_issue_pending(master->dma_tx);
 		}
 
@@ -507,7 +508,7 @@ static int sunxi_spi_transfer_one(struct spi_master *master,
 
 			trigger |= sspi_bits(sspi, SUNXI_CTL_DMA_RF_READY);
 
-			dmaengine_submit(desc_rx);
+			rx_cookie = dmaengine_submit(desc_rx);
 			dma_async_issue_pending(master->dma_rx);
 		}
 
@@ -557,6 +558,10 @@ static int sunxi_spi_transfer_one(struct spi_master *master,
 		ret = -ETIMEDOUT;
 		goto out;
 	}
+	if (desc_tx && dma_async_is_tx_complete(master->dma_tx, tx_cookie, NULL, NULL))
+		dev_warn(&master->dev, "TX DMA active after completion signalled!");
+	if (desc_rx && dma_async_is_tx_complete(master->dma_rx, rx_cookie, NULL, NULL))
+		dev_warn(&master->dev, "RX DMA active after completion signalled!");
 
 out:
 	if (ret < 0 && sunxi_spi_can_dma(master, spi, tfr)) {
