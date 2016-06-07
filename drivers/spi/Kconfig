@@ -593,12 +593,6 @@ config SPI_SUN4I
 	help
 	  SPI driver for Allwinner sun4i, sun5i and sun7i SoCs
 
-config SPI_SUN6I
-	tristate "Allwinner A31 SPI controller (deprecated compatibility option)"
-	depends on ARCH_SUNXI || COMPILE_TEST
-	depends on RESET_CONTROLLER
-	select SPI_SUN4I
-
 config SPI_MXS
 	tristate "Freescale MXS SPI controller"
 	depends on ARCH_MXS
