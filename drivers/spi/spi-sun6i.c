@@ -23,7 +23,7 @@
 
 #include <linux/spi/spi.h>
 
-#define SUN6I_FIFO_DEPTH		128
+#define SUN6I_FIFO_DEPTH		68
 
 #define SUN6I_GBL_CTL_REG		0x04
 #define SUN6I_GBL_CTL_BUS_ENABLE		BIT(0)
