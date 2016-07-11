@@ -169,6 +169,10 @@ static int sun6i_spi_transfer_one(struct spi_master *master,
 	int ret = 0;
 	u32 reg;
 
+	/* A 0 length transfer never finishes if programmed in the hardware */
+	if (!tfr->len)
+		return 0;
+
 	/* We don't support transfer larger than the FIFO */
 	if (tfr->len > SUN6I_FIFO_DEPTH)
 		return -EINVAL;
