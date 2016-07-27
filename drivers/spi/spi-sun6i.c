@@ -23,6 +23,10 @@
 
 #include <linux/spi/spi.h>
 
+/*
+ * The manual says FIFO depth is 128 bytes but transfer of more than 68 bytes
+ * never finishes.
+ */
 #define SUN6I_FIFO_DEPTH		68
 
 #define SUN6I_GBL_CTL_REG		0x04
